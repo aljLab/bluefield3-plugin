@@ -40,7 +40,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: bluefield3-driver
+  name: bluefield3-pod
   labels:
     app: bluefield3-driver
 spec:
