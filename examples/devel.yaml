@@ -40,11 +40,14 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: bluefield3-test
+  name: bluefield3-driver
   labels:
     app: bluefield3-driver
 spec:
   restartPolicy: OnFailure
+  volumes:
+    - name: shared-bin
+      emptyDir: {}
   containers:
   - name: bluefield3-driver
     image: bluefield3-driver:local
