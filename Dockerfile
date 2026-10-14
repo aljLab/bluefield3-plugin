@@ -30,7 +30,8 @@ WORKDIR /
 COPY --from=builder /workspace/manager .
 
 # copy the dpl binary to the driver container
-COPY --chmod=755 $HOME/.local/bin/dpl /usr/local/bin/dpl
+ARG DPL_BINARY_PATH
+COPY --chmod=755 ${DPL_BINARY_PATH} /usr/local/bin/dpl
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]
