@@ -17,6 +17,7 @@ limitations under the License.
 package nf
 
 import (
+	"os"
 	"context"
 	"os/exec"
 
@@ -69,15 +70,21 @@ func (r *NetworkFunctionReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	// check if network is configured (interfaces up on proxy and proxy <-> BF configured)
 	// update status based on real life
 
-	cmd := exec.Command("./shared/bin/dpl help")
+	env := os.Environ()
+	path := "/shared/bin:" + os.Getenv("PATH")
+	
+	cmd := exec.Command("dpl", "help")
+	cmd.Env = append(env, "PATH="+path)
 	out, err := cmd.CombinedOutput();
 	logger.Info("dpl help produced this output:", string(out), err)
 
-	cmd1 := exec.Command("./shared/bin/dpl compile")
+	cmd1 := exec.Command("dpl", "compile")
+	cmd1.Env = append(env, "PATH="+path)
 	out1, err := cmd1.CombinedOutput();
 	logger.Info("dpl help produced this output:", string(out1), err)
 
-	cmd2 := exec.Command("./shared/bin/dpl p4runtime_sh")
+	cmd2 := exec.Command("dpl", "p4runtime_sh")
+	cmd2.Env = append(env, "PATH="+path)
 	out2, err := cmd2.CombinedOutput();
 	logger.Info("dpl help produced this output:", string(out2), err)
 	// DEPLOY
