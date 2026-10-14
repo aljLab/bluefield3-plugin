@@ -18,6 +18,7 @@ package nf
 
 import (
 	"context"
+	"os/exec"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -68,17 +69,28 @@ func (r *NetworkFunctionReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	// check if network is configured (interfaces up on proxy and proxy <-> BF configured)
 	// update status based on real life
 
+	cmd := exec.Command("./shared/bin/dpl help")
+	out, err := cmd.CombinedOutput();
+	logger.Info("dpl help produced this output:", string(out), err)
+
+	cmd1 := exec.Command("./shared/bin/dpl compile")
+	out1, err := cmd1.CombinedOutput();
+	logger.Info("dpl help produced this output:", string(out1), err)
+
+	cmd2 := exec.Command("./shared/bin/dpl p4runtime_sh")
+	out2, err := cmd2.CombinedOutput();
+	logger.Info("dpl help produced this output:", string(out2), err)
 	// DEPLOY
 	// fetch p4: program.p4
 	// compile p4 program (nvp4c --target doca-bf3 program.p4)
-	outDir := "_out/"
-	inputPath := "hack/reflector.p4"
-	artifacts, err := compileP4File(ctx, inputPath, outDir); if err != nil {
+	//outDir := "_out/"
+	// inputPath := "hack/reflector.p4"
+	// artifacts, err := compileP4File(ctx, inputPath, outDir); if err != nil {
 
-	}
+	// }
 
 	// load binaries on target (dpl p4runtime_sh --grpc-addr <bf-addr>:9559 --device-id <device-id> --config program.p4info.txt,program.dplconfig)
-	loadP4RuntimeShell(ctx, artifacts)
+	// loadP4RuntimeShell(ctx, artifacts)
 	// update status
 	return ctrl.Result{}, nil
 }
