@@ -103,11 +103,12 @@ func (r *NetworkFunctionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&corev1alpha1.NetworkFunction{}).
 		WithEventFilter(predicate.Funcs{
 			CreateFunc: func(e event.TypedCreateEvent[client.Object]) bool {
-				netfunc, ok := e.Object.(*corev1alpha1.NetworkFunction)
-				if !ok {
-					return false
-				}
-				return netfunc.Spec.TargetName == "bluefield3-host" // change later to generic name
+				return true
+				// netfunc, ok := e.Object.(*corev1alpha1.NetworkFunction)
+				// if !ok {
+				//	return false
+				// }
+				// return netfunc.Spec.TargetName == "bluefield3-host" // change later to generic name
 			},
 			UpdateFunc: func(e event.TypedUpdateEvent[client.Object]) bool {
 				oldNf, ok1 := e.ObjectOld.(*corev1alpha1.NetworkFunction)
