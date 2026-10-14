@@ -35,7 +35,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
+	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
 	// +kubebuilder:scaffold:imports
 

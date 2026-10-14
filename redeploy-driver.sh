@@ -5,7 +5,7 @@ git pull
 kubectl delete -f examples/devel.yaml
 
 # delete old image
-docker images rm bluefield3-driver:local
+docker image rm bluefield3-driver:local
 
 # rebuild image
 make docker-build IMG="bluefield3-driver:local"
