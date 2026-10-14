@@ -29,9 +29,6 @@ FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
 
-# copy the dpl binary to the driver container
-ARG DPL_BINARY_PATH
-COPY --chmod=755 ${DPL_BINARY_PATH} /usr/local/bin/dpl
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]

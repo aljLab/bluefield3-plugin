@@ -17,8 +17,7 @@ docker image rm bluefield3-driver:local
 echo
 echo "==> Building docker image with new controller files..."
 echo
-# make docker-build IMG="bluefield3-driver:local"
-docker build -t 'bluefield3-driver:local' --build-arg DPL_BINARY_PATH='$HOME/.local/bin/dpl' .
+make docker-build IMG="bluefield3-driver:local"
 
 # load image into ctr
 echo
