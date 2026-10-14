@@ -34,6 +34,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -59,6 +62,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
+	var oobAddr, deviceId string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -78,6 +82,9 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card")
+	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server")
+	// add ports for the bluefield services
 	opts := zap.Options{
 		Development: true,
 	}
@@ -178,6 +185,44 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Do custom logic here:
+	// check status of DPL devel container
+	setupLog.Info("Checking status of DPL development Container.")
+	// connect to bluefield
+	setupLog.Info("Connecting to DPL P4runtime server")
+	// win p4 master arbitration (if supported by DPL)
+	setupLog.Info("Establishing controller leadership...")
+	// configure network:
+	setupLog.Info("Starting network configuration")
+	// get driver IP from control interface eth0 (or see in deployment args) -> flannel endpoint in pod namespace
+	setupLog.Info("Looking up driver IP for control interface assigned by primary CNI.")
+	// get netConfig with: ClusterCIDR, ServiceCIDR, (host ns) iface name , (host ns) bridge name
+	setupLog.Info("Requesting P4target configuration from IML daemon...")
+	// let operator assign NfCIDR
+	setupLog.Info("Checking if NfCIDR has been assigned by IML operator...")
+	// move sf's into the pod ns
+	// create bridge br0, veth pair to host bridge
+	// create VRF for NF routes (optional?)
+	// install routes to the cluster, add gateway, routes to control/NfCIDR (for dpcs, nf traffic)
+	// assign first NfCidr ip to pf1, enslave pf1sf0 to bridge br0
+	setupLog.Info("Deploying network configuration...")
+	setupLog.Info("Setup done.")
+	// netConfig, err := getP4TargetConfigFromIML()
+
+	if err := (&nf.NetworkFunctionReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "networkfunction")
+		os.Exit(1)
+	}
+	if err := (&sc.ServiceChainReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "servicechain")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

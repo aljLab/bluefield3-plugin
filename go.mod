@@ -1,8 +1,9 @@
 module github.com/mantra6g/bluefield3-plugin
 
-go 1.26.0
+go 1.26.1
 
 require (
+	github.com/mantra6g/iml/api v0.0.0-20261009230842-15d4a19a7f04
 	github.com/onsi/ginkgo/v2 v2.27.4
 	github.com/onsi/gomega v1.39.0
 	k8s.io/apimachinery v0.37.0

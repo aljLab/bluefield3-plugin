@@ -1,11 +1,32 @@
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/name: bluefield3-plugin
-    app.kubernetes.io/managed-by: kustomize
   name: manager-role
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - my.domain
+  resources:
+  - networkfunctions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - my.domain
+  resources:
+  - networkfunctions/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - my.domain
+  resources:
+  - networkfunctions/status
+  verbs:
+  - get
+  - patch
+  - update

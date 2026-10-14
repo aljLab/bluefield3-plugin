@@ -8,4 +8,13 @@ layout:
 - go.kubebuilder.io/v4
 projectName: bluefield3-plugin
 repo: github.com/mantra6g/bluefield3-plugin
+resources:
+- controller: true
+  domain: my.domain
+  kind: NetworkFunction
+  version: v1alpha1
+- controller: true
+  domain: my.domain
+  kind: ServiceChain
+  version: v1alpha1
 version: "3"
