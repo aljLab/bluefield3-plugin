@@ -223,14 +223,14 @@ func main() {
 		os.Exit(1)
 	}
 	setupLog.Info("Registered NF Reconciler.")
-	if err := (&sc.ServiceChainReconciler{
+	/*if err := (&sc.ServiceChainReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "servicechain")
 		os.Exit(1)
 	}
-	setupLog.Info("Registered SC Reconciler.")
+	setupLog.Info("Registered SC Reconciler.")*/
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
