@@ -38,6 +38,10 @@ import (
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
 	// +kubebuilder:scaffold:imports
+
+	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
+	infrav1alpha1 "github.com/mantra6g/iml/api/infra/v1alpha1"
+	schedulingv1alpha1 "github.com/mantra6g/iml/api/scheduling/v1alpha1"
 )
 
 var (
@@ -49,6 +53,9 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	// +kubebuilder:scaffold:scheme
+	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(infrav1alpha1.AddToScheme(scheme))
+	utilruntime.Must(schedulingv1alpha1.AddToScheme(scheme))
 }
 
 // nolint:gocyclo
