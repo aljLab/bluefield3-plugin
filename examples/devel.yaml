@@ -56,7 +56,6 @@ spec:
       capabilities:
         add: ["NET_ADMIN"]
     args: [
-      "--data-iface=iml0",
       "--oob-addr=172.16.44.81",
       "--device-id=1000",
       ]
