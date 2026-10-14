@@ -5,6 +5,6 @@ metadata:
   labels:
     nf: simple-nf
 spec:
-  p4-file: https://github.com/aljLab/thesis-a-labonte/blob/main/p4/reflector.p4
+  p4File: https://github.com/aljLab/thesis-a-labonte/blob/main/p4/reflector.p4
   targetSelector:
     p4target.loom.io/arch: doca-bf3
