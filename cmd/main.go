@@ -51,11 +51,10 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
-	// +kubebuilder:scaffold:scheme
 	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(infrav1alpha1.AddToScheme(scheme))
 	utilruntime.Must(schedulingv1alpha1.AddToScheme(scheme))
+	// +kubebuilder:scaffold:scheme
 }
 
 // nolint:gocyclo
