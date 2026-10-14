@@ -1,0 +1,15 @@
+apiVersion: core.loom.io/v1alpha1
+kind: ServiceChain
+metadata:
+  name: example-bmv2-target
+  namespace: default
+spec:
+  from:
+    name: web-client
+    namespace: default
+  to:
+    name: web-server
+    namespace: default
+  functions:
+  - matchLabels:
+    nf: simple-nf

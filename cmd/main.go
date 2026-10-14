@@ -206,7 +206,7 @@ func main() {
 	// install routes to the cluster, add gateway, routes to control/NfCIDR (for dpcs, nf traffic)
 	// assign first NfCidr ip to pf1, enslave pf1sf0 to bridge br0
 	setupLog.Info("Deploying network configuration...")
-	setupLog.Info("Setup done.")
+	setupLog.Info("Setup done, registering controllers with Manager.")
 	// netConfig, err := getP4TargetConfigFromIML()
 
 	if err := (&nf.NetworkFunctionReconciler{
@@ -216,6 +216,7 @@ func main() {
 		setupLog.Error(err, "Failed to create controller", "controller", "networkfunction")
 		os.Exit(1)
 	}
+	setupLog.Info("Registered NF Reconciler.")
 	if err := (&sc.ServiceChainReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -223,6 +224,7 @@ func main() {
 		setupLog.Error(err, "Failed to create controller", "controller", "servicechain")
 		os.Exit(1)
 	}
+	setupLog.Info("Registered SC Reconciler.")
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

@@ -1,0 +1,12 @@
+apiVersion: infra.loom.io/v1alpha1
+kind: BMv2Target
+metadata:
+  name: example-bmv2-target
+spec:
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+    requests:
+      cpu: "250m"
+      memory: "128Mi"
