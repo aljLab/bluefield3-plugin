@@ -89,7 +89,7 @@ spec:
       limits:
         cpu: 500m
         memory: 256Mi
-    command: ["sh", "-c", "cp ~/.local/bin/dpl /shared/bin/dpl && sleep infinity"]
+    command: ["sh", "-c", "/app/dpl install && cp $HOME/.local/bin/dpl /shared/bin/dpl && sleep infinity"]
     volumeMounts:
       - name: shared-bin
         mountPath: /shared/bin
