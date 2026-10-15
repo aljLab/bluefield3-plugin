@@ -36,12 +36,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
-	dplclient "github.com/mantra6g/bluefield3-plugin/client"
-	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
-
-	"github.com/mantra6g/bluefield3-plugin/internal/controller"
 	// +kubebuilder:scaffold:imports
 
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	infrav1alpha1 "github.com/mantra6g/iml/api/infra/v1alpha1"
 	schedulingv1alpha1 "github.com/mantra6g/iml/api/scheduling/v1alpha1"
@@ -197,7 +194,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := (&controller.BlueField3TargetReconciler{
+	if err := (&bf3.BlueField3TargetReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
