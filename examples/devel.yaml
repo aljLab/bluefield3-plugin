@@ -50,6 +50,11 @@ spec:
       hostPath: 
         path: /tmp/loom
         type: Directory
+  securityContext:
+    runAsUser: 1004
+    runAsGroup: 1004
+    supplementalGroups:
+      - 2000
   containers:
   - name: bluefield3-driver
     image: bluefield3-driver:local
