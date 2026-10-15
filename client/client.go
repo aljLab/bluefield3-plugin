@@ -2,7 +2,6 @@ package client
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"net/http"
 	"io"
