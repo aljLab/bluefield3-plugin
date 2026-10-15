@@ -69,7 +69,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-	var oobAddr, deviceId, dplPort, sharedHostVolumePath string
+	var dplAddr, oobAddr, deviceId, dplPort, sharedHostVolumePath string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -89,6 +89,7 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.StringVar(&dplAddr, "dpl-addr", "172.16.44.80", "The IPv4 address of the DPL server.")
 	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card.")
 	flag.StringVar(&dplPort, "dpl-port", "8090", "The HTTP port to use with the Out-Of-Band address for dpl communication.")
 	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server.")
@@ -219,8 +220,7 @@ func main() {
 	// netConfig, err := getP4TargetConfigFromIML()
 	
 	setupLog.Info("Creating DplClient.")
-	dplClient := dplclient.NewDplClient(oobAddr, dplPort, sharedHostVolumePath)
-
+	dplClient := dplclient.NewDplClient(dplAddr, dplPort, sharedHostVolumePath)
 
 
 	if err := (&nf.NetworkFunctionReconciler{
