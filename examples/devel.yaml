@@ -48,11 +48,8 @@ spec:
   volumes:
     - name: artifacts-volume
       hostPath: 
-        path: /etc/loom
+        path: /tmp/loom
         type: Directory
-  securityContext:
-    supplementalGroups:
-        - 2000
   containers:
   - name: bluefield3-driver
     image: bluefield3-driver:local
@@ -65,7 +62,7 @@ spec:
       "--oob-addr=172.16.44.81",
       "--device-id=1000",
       "--dpl-port=8090",
-      "--shared-vol-path=/etc/loom",
+      "--shared-vol-path=/tmp/loom",
       ]
     resources:
       requests:
@@ -85,5 +82,5 @@ spec:
           fieldPath: metadata.namespace
     volumeMounts:
       - name: artifacts-volume
-        mountPath: /etc/loom
+        mountPath: /tmp/loom
         

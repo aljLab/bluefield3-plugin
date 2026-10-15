@@ -93,7 +93,7 @@ func main() {
 	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card.")
 	flag.StringVar(&dplPort, "dpl-port", "8090", "The HTTP port to use with the Out-Of-Band address for dpl communication.")
 	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server.")
-	flag.StringVar(&sharedHostVolumePath, "shared-vol-path", "/etc/loom", "The path of the directory shared between host and driver.")
+	flag.StringVar(&sharedHostVolumePath, "shared-vol-path", "/tmp/loom", "The path of the directory shared between host and driver.")
 	// add ports for the bluefield services
 	opts := zap.Options{
 		Development: true,
