@@ -17,4 +17,8 @@ resources:
   domain: my.domain
   kind: ServiceChain
   version: v1alpha1
+- controller: true
+  domain: my.domain
+  kind: BlueField3Target
+  version: v1alpha1
 version: "3"

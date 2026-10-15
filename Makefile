@@ -121,9 +121,14 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 # Override BASE_IMAGE to build from another registry, e.g.
 # make docker-build IMG=<img> BASE_IMAGE=docker.io/library/golang:1.26
+#.PHONY: docker-build
+#docker-build: ## Build docker image with the manager.
+#	$(CONTAINER_TOOL) build $(if $(BASE_IMAGE),--build-arg BASE_IMAGE=$(BASE_IMAGE)) -t ${IMG} .
+
 .PHONY: docker-build
-docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build $(if $(BASE_IMAGE),--build-arg BASE_IMAGE=$(BASE_IMAGE)) -t ${IMG} .
+docker-build: ## Build docker images for the driver and operator.
+	$(CONTAINER_TOOL) build -f Dockerfile --target driver -t ${IMG_DRIVER} --platform=linux/amd64 .
+	$(CONTAINER_TOOL) build -f Dockerfile --target operator -t ${IMG_OPERATOR} --platform=linux/amd64 .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.

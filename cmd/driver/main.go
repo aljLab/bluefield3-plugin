@@ -39,6 +39,7 @@ import (
 	dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
 
+	"github.com/mantra6g/bluefield3-plugin/internal/controller"
 	// +kubebuilder:scaffold:imports
 
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
@@ -240,6 +241,13 @@ func main() {
 		os.Exit(1)
 	}
 	setupLog.Info("Registered SC Reconciler.")*/
+	if err := (&controller.BlueField3TargetReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "bluefield3target")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
