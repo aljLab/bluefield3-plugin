@@ -62,7 +62,8 @@ func (c *DplClient) FetchProgram(fileURL string) error {
 		return fmt.Errorf("downloading %q: HTTP %d", fileURL, resp.StatusCode)
 	}
 
-	f, err := os.Create(c.VolumePath)
+	path := fmt.Sprintf("%s/%s", c.VolumePath,filepath.Base(fileURL))
+	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("creating file: %w", err)
 	}
