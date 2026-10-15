@@ -46,36 +46,11 @@ metadata:
 spec:
   restartPolicy: OnFailure
   volumes:
-    - name: shared-bin
-      emptyDir: {}
-  initContainers:
-    - name: install-dpl
-      image: nvcr.io/nvidia/doca/dpl_dev:1.5.0-doca3.4.0-host
-      imagePullPolicy: IfNotPresent
-      command: ["sh", "-c"]
-      args:
-        - |
-          set -eu
-
-          # Put the installer's home directory on shared storage
-          export HOME=/shared/home
-          mkdir -p "$HOME"
-
-          # Run the actual installer
-          /app/dpl install
-
-          # Verify the expected output exists
-          test -f "$HOME/.local/bin/dpl"
-
-          # Copy the binary to the shared location
-          cp "$HOME/.local/bin/dpl" /shared/bin/dpl
-          chmod 755 /shared/bin/dpl
-
-          echo "DPL binary installed at /shared/bin/dpl"
-      volumeMounts:
-        - name: shared-bin
-          mountPath: /shared
-
+    - name: artifacts-volume
+      hostPath: 
+        path: /etc/loom
+        type: Directory
+  
   containers:
   - name: bluefield3-driver
     image: bluefield3-driver:local
@@ -104,6 +79,6 @@ spec:
         fieldRef:
           fieldPath: metadata.namespace
     volumeMounts:
-      - name: shared-bin
-        mountPath: /shared/bin
-        readOnly: true
+      - name: artifacts-volume
+        mountPath: /etc/loom
+        
