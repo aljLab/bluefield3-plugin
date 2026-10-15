@@ -36,8 +36,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
-	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
 	dplclient "github.com/mantra6g/bluefield3-plugin/client"
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
+
 	// +kubebuilder:scaffold:imports
 
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
@@ -218,14 +219,13 @@ func main() {
 	setupLog.Info("Deploying network configuration...")
 	setupLog.Info("Setup done, registering controllers with Manager.")
 	// netConfig, err := getP4TargetConfigFromIML()
-	
+
 	setupLog.Info("Creating DplClient.")
 	dplClient := dplclient.NewDplClient(dplAddr, dplPort, sharedHostVolumePath)
 
-
 	if err := (&nf.NetworkFunctionReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
 		DplClient: dplClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "networkfunction")

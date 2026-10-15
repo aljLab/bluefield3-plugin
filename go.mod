@@ -3,9 +3,11 @@ module github.com/mantra6g/bluefield3-plugin
 go 1.26.1
 
 require (
+	github.com/golang/protobuf v1.5.4
 	github.com/mantra6g/iml/api v0.0.0-20261009230842-15d4a19a7f04
 	github.com/onsi/ginkgo/v2 v2.27.4
 	github.com/onsi/gomega v1.39.0
+	github.com/p4lang/p4runtime v1.6.0
 	k8s.io/apimachinery v0.37.0
 	k8s.io/client-go v0.37.0
 	sigs.k8s.io/controller-runtime v0.25.0

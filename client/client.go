@@ -32,7 +32,6 @@ type DplLoadRequest struct {
 	DeviceID    string
 	GrpcAddr    string
 	FileName string
-	Config      string
 }
 
 func NewDplClient(serverAddr, serverPort, volumePath string) *DplClient {
@@ -44,9 +43,9 @@ func NewDplClient(serverAddr, serverPort, volumePath string) *DplClient {
 	}
 }
 
-// fetches the program from a remote URL and
+// fetches the program from a remote URL to host-shared volume (accessible for DPL)
 // creates a subdir /tmp/loom/<programName> to store compilation artifacts in
-// stores the program on the DplClient
+// stores the program dir on the DplClient for cleanup
 func (c *DplClient) FetchProgram(fileURL string) error {
 	fileName := filepath.Base(fileURL)
 	programName := strings.TrimSuffix(fileName, filepath.Ext(fileURL))
@@ -77,7 +76,7 @@ func (c *DplClient) FetchProgram(fileURL string) error {
 	}
 	defer f.Close()
 
-	c.progs[programName] = "created"
+	c.progs[programName] = dir
 
 	if _, err := io.Copy(f, resp.Body); err != nil {
 		return fmt.Errorf("writing file: %w", err)
@@ -115,6 +114,7 @@ func (c *DplClient) LoadP4RuntimeShell(fileName string) error {
 	return nil
 }
 
+// request compilation of a p4 program located in the shared volume by name
 func (c *DplClient) postCompileRequest(body DplCompileRequest) (*http.Response, error) {
 	data, err := json.Marshal(body)
 	if err != nil {
@@ -137,6 +137,8 @@ func (c *DplClient) postCompileRequest(body DplCompileRequest) (*http.Response, 
 	return res, nil
 }
 
+// request DPL to load a p4 program onto the BlueField
+// artifacts need to be compiled prior and are located in the shared volume
 func (c *DplClient) postLoadRequest(body DplLoadRequest) (*http.Response, error) {
 	data, err := json.Marshal(body)
 	if err != nil {
@@ -159,8 +161,12 @@ func (c *DplClient) postLoadRequest(body DplLoadRequest) (*http.Response, error)
 	return res, nil
 }
 
+// clean up a subdirectory associated with a nf in the shared volume
+func (c *DplClient) Cleanup(programName string) error {
+	dir, ok := c.progs[programName]; if !ok {
+		return fmt.Errorf("Did not find program %s to clean up", programName)
+	}
 
-func (c *DplClient) Cleanup() error {
-	// clear /tmp/loom/
+	os.RemoveAll(dir)
 	return nil
 }
