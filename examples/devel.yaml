@@ -50,7 +50,9 @@ spec:
       hostPath: 
         path: /etc/loom
         type: Directory
-  
+  securityContext:
+    supplementalGroups:
+        - 2000
   containers:
   - name: bluefield3-driver
     image: bluefield3-driver:local
@@ -58,8 +60,6 @@ spec:
     securityContext:
       capabilities:
         add: ["NET_ADMIN"]
-      supplementalGroups:
-        - 2000
     args: [
       "--oob-addr=172.16.44.81",
       "--device-id=1000",
