@@ -69,7 +69,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-	var oobAddr, deviceId, dplGrpcPort, sharedHostVolumePath string
+	var oobAddr, deviceId, dplPort, sharedHostVolumePath string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -90,7 +90,7 @@ func main() {
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card.")
-	flag.StringVar(&dplGrpcPort, "dpl-grpc-port", "9559", "The gRPC port to use with the Out-Of-Band address for gRPC communication.")
+	flag.StringVar(&dplPort, "dpl-port", "8090", "The HTTP port to use with the Out-Of-Band address for dpl communication.")
 	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server.")
 	flag.StringVar(&sharedHostVolumePath, "shared-vol-path", "/etc/loom", "The path of the directory shared between host and driver.")
 	// add ports for the bluefield services
@@ -219,7 +219,7 @@ func main() {
 	// netConfig, err := getP4TargetConfigFromIML()
 	
 	setupLog.Info("Creating DplClient.")
-	dplClient := dplclient.NewDplClient(oobAddr, dplGrpcPort, sharedHostVolumePath)
+	dplClient := dplclient.NewDplClient(oobAddr, dplPort, sharedHostVolumePath)
 
 
 

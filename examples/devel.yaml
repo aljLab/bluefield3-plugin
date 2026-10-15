@@ -61,6 +61,8 @@ spec:
     args: [
       "--oob-addr=172.16.44.81",
       "--device-id=1000",
+      "--dpl-port=8090",
+      "--shared-vol-path=/etc/loom",
       ]
     resources:
       requests:
