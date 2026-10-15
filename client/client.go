@@ -26,13 +26,13 @@ type DplClient struct {
 
 type DplCompileRequest struct {
 	Target      string
-	ProgramName string
+	FileName string
 }
 
 type DplLoadRequest struct {
 	DeviceID    string
 	GrpcAddr    string
-	ProgramName string
+	FileName string
 	Config      string
 }
 
@@ -99,7 +99,7 @@ func (c *DplClient) FetchProgram(fileURL string) error {
 func (c *DplClient) CompileP4File(fileName string) error {
 	req := DplCompileRequest{
 		Target: "doca-bf3",
-		ProgramName: fileName,
+		FileName: fileName,
 	}
 
 	_, err := c.postCompileRequest(req); if err != nil {
@@ -118,7 +118,7 @@ func (c *DplClient) LoadP4RuntimeShell(fileName string) error {
 	req := DplLoadRequest{
 		DeviceID: "1000",
 		GrpcAddr: "172.16.44.81:9559",
-		ProgramName: fileName,
+		FileName: fileName,
 		Config: loadConfig,
 	}
 
