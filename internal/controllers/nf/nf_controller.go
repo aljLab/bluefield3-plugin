@@ -17,9 +17,8 @@ limitations under the License.
 package nf
 
 import (
-	"os"
 	"context"
-	"os/exec"
+	"path/filepath"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,12 +29,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
+	dplclient "github.com/mantra6g/bluefield3-plugin/client"
 )
 
 // NetworkFunctionReconciler reconciles a NetworkFunction object
 type NetworkFunctionReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+	DplClient *dplclient.DplClient
 }
 
 // +kubebuilder:rbac:groups=my.domain,resources=networkfunctions,verbs=get;list;watch;create;update;patch;delete
@@ -70,34 +72,25 @@ func (r *NetworkFunctionReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	// check if network is configured (interfaces up on proxy and proxy <-> BF configured)
 	// update status based on real life
 
-	env := os.Environ()
-	path := "/shared/bin:" + os.Getenv("PATH")
-	
-	cmd := exec.Command("dpl", "help")
-	cmd.Env = append(env, "PATH="+path)
-	out, err := cmd.CombinedOutput();
-	logger.Info("dpl help produced this output:", string(out), err)
+	// fetch program
+	fileURL := netfunc.Spec.P4File
+	err := r.DplClient.FetchProgram(fileURL); if err != nil {
+		logger.Error(err, "unable to fetch p4 program")
+		return ctrl.Result{}, err
+	}
 
-	cmd1 := exec.Command("dpl", "compile")
-	cmd1.Env = append(env, "PATH="+path)
-	out1, err := cmd1.CombinedOutput();
-	logger.Info("dpl help produced this output:", string(out1), err)
+	// send compile request
+	err = r.DplClient.CompileP4File(filepath.Base(fileURL)); if err != nil {
+		logger.Error(err, "unable to compile p4 program")
+		return ctrl.Result{}, err
+	}
 
-	cmd2 := exec.Command("dpl", "p4runtime_sh")
-	cmd2.Env = append(env, "PATH="+path)
-	out2, err := cmd2.CombinedOutput();
-	logger.Info("dpl help produced this output:", string(out2), err)
-	// DEPLOY
-	// fetch p4: program.p4
-	// compile p4 program (nvp4c --target doca-bf3 program.p4)
-	//outDir := "_out/"
-	// inputPath := "hack/reflector.p4"
-	// artifacts, err := compileP4File(ctx, inputPath, outDir); if err != nil {
+	// send deploy request
+	err = r.DplClient.LoadP4RuntimeShell(filepath.Base(fileURL)); if err != nil {
+		logger.Error(err, "unable to load p4 program")
+		return ctrl.Result{}, err
+	}
 
-	// }
-
-	// load binaries on target (dpl p4runtime_sh --grpc-addr <bf-addr>:9559 --device-id <device-id> --config program.p4info.txt,program.dplconfig)
-	// loadP4RuntimeShell(ctx, artifacts)
 	// update status
 	return ctrl.Result{}, nil
 }

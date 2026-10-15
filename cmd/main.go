@@ -37,6 +37,7 @@ import (
 
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
+	dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	// +kubebuilder:scaffold:imports
 
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
@@ -68,7 +69,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-	var oobAddr, deviceId string
+	var oobAddr, deviceId, dplGrpcPort, sharedHostVolumePath string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -88,8 +89,10 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card")
-	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server")
+	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card.")
+	flag.StringVar(&dplGrpcPort, "dpl-grpc-port", "9559", "The gRPC port to use with the Out-Of-Band address for gRPC communication.")
+	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server.")
+	flag.StringVar(&sharedHostVolumePath, "shared-vol-path", "/etc/loom", "The path of the directory shared between host and driver.")
 	// add ports for the bluefield services
 	opts := zap.Options{
 		Development: true,
@@ -214,10 +217,16 @@ func main() {
 	setupLog.Info("Deploying network configuration...")
 	setupLog.Info("Setup done, registering controllers with Manager.")
 	// netConfig, err := getP4TargetConfigFromIML()
+	
+	setupLog.Info("Creating DplClient.")
+	dplClient := dplclient.NewDplClient(oobAddr, dplGrpcPort, sharedHostVolumePath)
+
+
 
 	if err := (&nf.NetworkFunctionReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		DplClient: dplClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "networkfunction")
 		os.Exit(1)
