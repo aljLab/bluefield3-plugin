@@ -58,6 +58,8 @@ spec:
     securityContext:
       capabilities:
         add: ["NET_ADMIN"]
+      supplementalGroups:
+        - 2000
     args: [
       "--oob-addr=172.16.44.81",
       "--device-id=1000",
