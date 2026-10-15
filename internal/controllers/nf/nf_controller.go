@@ -91,6 +91,8 @@ func (r *NetworkFunctionReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
+	
+
 	// update status
 	return ctrl.Result{}, nil
 }

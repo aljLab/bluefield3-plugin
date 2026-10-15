@@ -9,6 +9,7 @@ import (
 	"os"
 	"encoding/json"
 	"path/filepath"
+	"strings"
 )
 
 type Result struct {
@@ -17,9 +18,10 @@ type Result struct {
 }
 
 type DplClient struct {
-	ServerAddr    string
-	ServerPort    string
-	VolumePath    string
+	ServerAddr       string
+	ServerPort       string
+	VolumePath       string
+	progs map[string]string
 }
 
 type DplCompileRequest struct {
@@ -39,6 +41,7 @@ func NewDplClient(serverAddr, serverPort, volumePath string) *DplClient {
 		ServerAddr: serverAddr,
 		ServerPort: serverPort,
 		VolumePath: volumePath,
+		progs: make(map[string]string),
 	}
 }
 
@@ -50,7 +53,21 @@ func (c *DplClient) GetConfigString(fileName string) (string, error) {
 	return fmt.Sprintf("%s/%s.p4info.txt,%s/%s.dplconfig", c.VolumePath, fileName, c.VolumePath, fileName), nil
 }
 
+
+// fetches the program from a remote URL and
+// creates a subdir /tmp/loom/<programName> to store compilation artifacts in
+// stores the program on the DplClient
 func (c *DplClient) FetchProgram(fileURL string) error {
+	fileName := filepath.Base(fileURL)
+	programName := strings.TrimSuffix(fileName, filepath.Ext(fileURL))
+
+	fmt.Println("creating subdirectory for program")
+
+	dir := fmt.Sprintf("%s/%s", c.VolumePath, programName)
+	err := os.MkdirAll(dir, 0755); if err != nil {
+		return fmt.Errorf("creating subdirectory %s", err)
+	}
+
 
 	resp, err := http.Get(fileURL) //nolint:noctx
 	if err != nil {
@@ -62,17 +79,20 @@ func (c *DplClient) FetchProgram(fileURL string) error {
 		return fmt.Errorf("downloading %q: HTTP %d", fileURL, resp.StatusCode)
 	}
 
-	path := fmt.Sprintf("%s/%s", c.VolumePath,filepath.Base(fileURL))
-
+	path := fmt.Sprintf("%s/%s", dir, fileName)
+	fmt.Println("creating file at ", path)
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("creating file: %w", err)
 	}
 	defer f.Close()
 
+	c.progs[programName] = "created"
+
 	if _, err := io.Copy(f, resp.Body); err != nil {
 		return fmt.Errorf("writing file: %w", err)
 	}
+
 	return nil
 }
 
@@ -154,3 +174,8 @@ func (c *DplClient) postLoadRequest(body DplLoadRequest) (*http.Response, error)
 	return res, nil
 }
 
+
+func (c *DplClient) Cleanup() error {
+	// clear /tmp/loom/
+	return nil
+}
