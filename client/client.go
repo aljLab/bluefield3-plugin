@@ -45,15 +45,6 @@ func NewDplClient(serverAddr, serverPort, volumePath string) *DplClient {
 	}
 }
 
-func (c *DplClient) GetConfigString(fileName string) (string, error) {
-	if fileName == "" || filepath.Ext(fileName) != ".p4" {
-		return "", errors.New("file name can not be empty and has to be *.p4")
-	}
-
-	return fmt.Sprintf("%s/%s.p4info.txt,%s/%s.dplconfig", c.VolumePath, fileName, c.VolumePath, fileName), nil
-}
-
-
 // fetches the program from a remote URL and
 // creates a subdir /tmp/loom/<programName> to store compilation artifacts in
 // stores the program on the DplClient
@@ -111,18 +102,13 @@ func (c *DplClient) CompileP4File(fileName string) error {
 }
 
 func (c *DplClient) LoadP4RuntimeShell(fileName string) error {
-	loadConfig, err := c.GetConfigString(fileName); if err != nil {
-		return fmt.Errorf("formatting load config: %w", err)
-	}
-
 	req := DplLoadRequest{
 		DeviceID: "1000",
 		GrpcAddr: "172.16.44.81:9559",
 		FileName: fileName,
-		Config: loadConfig,
 	}
 
-	_, err = c.postLoadRequest(req); if err != nil {
+	_, err := c.postLoadRequest(req); if err != nil {
 		return fmt.Errorf("loadig file: %w", err)
 	}
 
