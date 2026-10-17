@@ -125,10 +125,13 @@ run: manifests generate fmt vet ## Run a controller from your host.
 #docker-build: ## Build docker image with the manager.
 #	$(CONTAINER_TOOL) build $(if $(BASE_IMAGE),--build-arg BASE_IMAGE=$(BASE_IMAGE)) -t ${IMG} .
 
-.PHONY: docker-build
-docker-build: ## Build docker images for the driver and operator.
-	$(CONTAINER_TOOL) build -f Dockerfile --target driver -t ${IMG_DRIVER} --platform=linux/amd64 .
-	$(CONTAINER_TOOL) build -f Dockerfile --target operator -t ${IMG_OPERATOR} --platform=linux/amd64 .
+.PHONY: docker-build-driver
+docker-build-driver: ## Build docker images for the driver.
+	$(CONTAINER_TOOL) build -f Dockerfile --target driver -t ${IMG_DRIVER} .
+
+.PHONY: docker-build-operator
+docker-build-operator: ## Build docker images for the driver.
+	$(CONTAINER_TOOL) build -f Dockerfile --target operator -t ${IMG_OPERATOR} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.

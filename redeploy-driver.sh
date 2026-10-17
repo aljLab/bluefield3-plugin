@@ -17,7 +17,7 @@ docker image rm bluefield3-driver:local
 echo
 echo "==> Building docker image with new controller files..."
 echo
-make docker-build IMG_DRIVER="bluefield3-driver:local"
+make docker-build-driver IMG_DRIVER="bluefield3-driver:local"
 
 # load image into ctr
 echo
