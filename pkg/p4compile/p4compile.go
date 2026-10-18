@@ -17,7 +17,7 @@ import (
 	// "time"
 
 	// oldproto "github.com/golang/protobuf/proto"
-	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/prototext"
 	p4configv1 "github.com/p4lang/p4runtime/go/p4/config/v1"
 )
 
@@ -58,7 +58,7 @@ func LoadCompiledArchive(ctx context.Context, fileURL string, log logr.Logger) (
 	}
 
 	var p4info p4configv1.P4Info
-	if err := protojson.Unmarshal(p4infoBytes, &p4info); err != nil {
+	if err := prototext.Unmarshal(p4infoBytes, &p4info); err != nil {
 		return nil, fmt.Errorf("parsing p4info: %w", err)
 	}
 
