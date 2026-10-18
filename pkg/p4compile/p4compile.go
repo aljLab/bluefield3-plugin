@@ -1,13 +1,16 @@
 package p4compile
 
 import (
+	"archive/tar"
 	"context"
 	"fmt"
+	"compress/gzip"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
+	"path/filepath"
 	"strings"
+	"errors"
 	// "time"
 
 	oldproto "github.com/golang/protobuf/proto"
@@ -72,14 +75,7 @@ func unpackArchive(resp *http.Response)(string, string, error){
 		return "", "", fmt.Errorf("writing archive file: %w", err)
 	}
 	
-	cmd := exec.Command(
-		"tar", "-xzf",
-		"/tmp/unpack/p4archive.tar.gz",
-		"-C", "/tmp/unpack/",
-	)
-	out, err := cmd.CombinedOutput(); if err != nil {
-		return "", "", fmt.Errorf("unpacking archive %w, %s", err, string(out))
-	}
+	extractTarGzFlat("/tmp/unpack/p4archive.tar.gz", "/tmp/unpack")
 
 	entries, err := os.ReadDir("/tmp/unpack"); if err != nil {
 		return "", "", fmt.Errorf("while reading /tmp/unpack: %w", err)
@@ -106,6 +102,51 @@ func unpackArchive(resp *http.Response)(string, string, error){
 	}
 	
 	return dplConfigName, p4InfoName, nil
+}
+
+func extractTarGzFlat(archivePath, destDir string) error {
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return fmt.Errorf("opening archive: %w", err)
+	}
+	defer f.Close()
+
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return fmt.Errorf("creating gzip reader: %w", err)
+	}
+	defer gz.Close()
+
+	tr := tar.NewReader(gz)
+
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("reading tar entry: %w", err)
+		}
+
+		if hdr.Typeflag != tar.TypeReg {
+			continue // extract only reg files
+		}
+
+		name := filepath.Base(hdr.Name)
+		target := filepath.Join(destDir, name)
+
+		out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(hdr.Mode).Perm())
+		if err != nil {
+			return fmt.Errorf("creating file %s: %w", target, err)
+		}
+		if _, err := io.Copy(out, tr); err != nil {
+			out.Close()
+			return fmt.Errorf("writing file %s: %w", target, err)
+		}
+		if err := out.Close(); err != nil {
+			return fmt.Errorf("closing file %s: %w", target, err)
+		}
+	}
 }
 
 func cleanUp(){
