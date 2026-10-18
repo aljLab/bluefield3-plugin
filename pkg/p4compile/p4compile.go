@@ -102,7 +102,7 @@ func unpackArchive(resp *http.Response)(string, string, error){
 	}
 
 	if !foundDplConfig || !foundP4Info {
-		return "", "", fmt.Errorf("Couldn't unpack archive. Make sure to provide a flat archive without nested directories, e.g. produced by 'tar -czf archive.tar.gz *.dplconfig *.p4info.txt'")
+		return "", "", fmt.Errorf("Archive did not contain the expected artifacts (*.dplconfig, *.p4info.txt)")
 	}
 	
 	return dplConfigName, p4InfoName, nil
