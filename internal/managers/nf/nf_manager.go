@@ -208,7 +208,7 @@ func (m *RealManager) compile(ctx context.Context, nf *corev1alpha1.NetworkFunct
 	var err error
 
 	if strings.HasPrefix(p4File, "http://") || strings.HasPrefix(p4File, "https://") || strings.HasPrefix(p4File, "s3://") {
-		result, compileErr := p4compile.LoadCompiledArchive(ctx, p4File)
+		result, compileErr := p4compile.LoadCompiledArchive(ctx, p4File, m.log)
 		if compileErr != nil {
 			err = compileErr
 		} else {

@@ -2,15 +2,18 @@ package p4compile
 
 import (
 	"archive/tar"
-	"context"
-	"fmt"
 	"compress/gzip"
+	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"errors"
+
+	"github.com/go-logr/logr"
+
 	// "time"
 
 	oldproto "github.com/golang/protobuf/proto"
@@ -23,7 +26,7 @@ type Result struct {
 	P4Info       *p4configv1.P4Info
 }
 
-func LoadCompiledArchive(ctx context.Context, fileURL string) (*Result, error) {
+func LoadCompiledArchive(ctx context.Context, fileURL string, log logr.Logger) (*Result, error) {
 	resp, err := http.Get(fileURL) //nolint:noctx
 	if err != nil {
 		return nil, fmt.Errorf("downloading %q: %w", fileURL, err)
@@ -35,7 +38,8 @@ func LoadCompiledArchive(ctx context.Context, fileURL string) (*Result, error) {
 	}
 
 	// unpacks archive and returns file names
-	dplConfigName, p4InfoName, err := unpackArchive(resp); if err != nil {
+	log.Info("Unpacking archive...")
+	dplConfigName, p4InfoName, err := unpackArchive(resp, log); if err != nil {
 		return nil, fmt.Errorf("unpacking archive: %w", err)
 	}
 	
@@ -63,7 +67,7 @@ func LoadCompiledArchive(ctx context.Context, fileURL string) (*Result, error) {
 	}, nil
 }
 
-func unpackArchive(resp *http.Response)(string, string, error){
+func unpackArchive(resp *http.Response, log logr.Logger)(string, string, error){
 	err := os.MkdirAll("/tmp/unpack", 0755); if err != nil {
 		return "", "", fmt.Errorf("while creating /tmp/unpack: %w", err)
 	}
@@ -79,7 +83,7 @@ func unpackArchive(resp *http.Response)(string, string, error){
 		return "", "", fmt.Errorf("writing archive file: %w", err)
 	}
 	
-	extractTarGzFlat("/tmp/unpack/p4archive.tar.gz", "/tmp/unpack")
+	extractTarGzFlat("/tmp/unpack/p4archive.tar.gz", "/tmp/unpack", log)
 
 	entries, err := os.ReadDir("/tmp/unpack"); if err != nil {
 		return "", "", fmt.Errorf("while reading /tmp/unpack: %w", err)
@@ -89,6 +93,7 @@ func unpackArchive(resp *http.Response)(string, string, error){
 	var dplConfigName, p4InfoName string
 
 	for _, entry := range entries {
+		log.Info("reading %s in unpacked dir", entry.Name())
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".dplconfig") {
 			dplConfigName = entry.Name()
 			foundDplConfig = true
@@ -108,7 +113,7 @@ func unpackArchive(resp *http.Response)(string, string, error){
 	return dplConfigName, p4InfoName, nil
 }
 
-func extractTarGzFlat(archivePath, destDir string) error {
+func extractTarGzFlat(archivePath, destDir string, log logr.Logger) error {
 	f, err := os.Open(archivePath)
 	if err != nil {
 		return fmt.Errorf("opening archive: %w", err)
@@ -139,7 +144,7 @@ func extractTarGzFlat(archivePath, destDir string) error {
 		name := filepath.Base(hdr.Name)
 		target := filepath.Join(destDir, name)
 
-		fmt.Printf("While extracting the archive: file -> %s", name)
+		log.Info("While extracting the archive: file -> %s", name)
 
 		out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(hdr.Mode).Perm())
 		if err != nil {
