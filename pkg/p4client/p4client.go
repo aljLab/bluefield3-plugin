@@ -1,13 +1,12 @@
 
 package p4client
-/* package p4client
 import (
-	"github.com/mantra6g/iml/targets/bmv2/pkg/p4rutils"
+	"github.com/mantra6g/bluefield3-plugin/pkg/p4rutils"
 	"context"
 	"fmt"
 	"io"
 
-	"github.com/mantra6g/iml/targets/bmv2/api"
+	"github.com/mantra6g/bluefield3-plugin/api"
 
 	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )
@@ -214,4 +213,4 @@ func (c *Bf3Client) EditTableEntries(ctx context.Context, entries []*p4v1.TableE
 		Updates:    updates,
 	})
 	return err
-} */
+}

@@ -44,7 +44,9 @@ import (
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
 	dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
+	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
 	"github.com/mantra6g/bluefield3-plugin/networking"
+	"github.com/mantra6g/bluefield3-plugin/pkg/p4client"
 
 	// +kubebuilder:scaffold:imports
 
@@ -59,8 +61,9 @@ var (
 )
 
 const (
-	electionIDHigh = 0
-	electionIDLow  = 1
+	electionIDHigh  = 0
+	electionIDLow   = 1
+	defaultDeviceID = 1000
 )
 
 func init() {
@@ -228,8 +231,7 @@ func main() {
 	dplClient := dplclient.NewDplClient(dplAddr, dplPort, sharedHostVolumePath)
 
 
-
-	setupLog.Info("Connecting to P4Runtime client at %s:%s", oobAddr, p4rPort)
+	setupLog.Info(fmt.Sprintf("Connecting to P4Runtime client at %s:%s", oobAddr, p4rPort))
 	// Establish gRPC connection and win primary arbitration before creating
 	// managers, so the P4Runtime client can be passed into NewManager.
 	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", oobAddr, p4rPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -304,11 +306,26 @@ func main() {
 	}
 	setupLog.Info(fmt.Sprintf("Connected to BlueField3 at %s (primary arbitration established)", oobAddr))
 
+	// create Bf3Client to pass to NF-Manager
+	bf3Client := p4client.NewBf3Client(c, defaultDeviceID, electionIDHigh, electionIDLow)
+	// create NFManager
+	nfMgr, err := nfmgr.NewManager(nfmgr.ManagerConfig{
+		Bf3Client:       bf3Client,
+		//P4TargetManager: p4targetMgr,
+		NFInterface:     "eth0",
+		MaxNFSlots:      1,
+		Log:             ctrl.Log.WithName("nf-manager"),
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to create nf manager")
+		os.Exit(1)
+	}
 
 	if err := (&nf.NetworkFunctionReconciler{
 		Client:    mgr.GetClient(),
 		Scheme:    mgr.GetScheme(),
 		DplClient: dplClient,
+		NFManager: nfMgr,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "networkfunction")
 		os.Exit(1)

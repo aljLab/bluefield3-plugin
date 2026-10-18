@@ -18,6 +18,7 @@ package nf
 
 import (
 	"context"
+	"net/netip"
 	// "path/filepath"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,11 +27,12 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	dplclient "github.com/mantra6g/bluefield3-plugin/client"
+	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
 )
 
 // NetworkFunctionReconciler reconciles a NetworkFunction object
@@ -38,6 +40,7 @@ type NetworkFunctionReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	DplClient *dplclient.DplClient
+	NFManager nfmgr.Manager
 }
 
 // +kubebuilder:rbac:groups=my.domain,resources=networkfunctions,verbs=get;list;watch;create;update;patch;delete
@@ -91,8 +94,9 @@ func (r *NetworkFunctionReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	} */
 
-
-
+	nfHandle := r.NFManager.EnsurePresent(ctx, netfunc, netip.MustParsePrefix("10.0.0.1/24"))
+	_ = nfHandle.Status()
+	// err = r.updateStatus(netfunc, status, fullNfAddress)
 	// update status
 	return ctrl.Result{}, nil
 }
