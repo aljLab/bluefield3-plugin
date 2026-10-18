@@ -18,7 +18,7 @@ package nf
 
 import (
 	"context"
-	"path/filepath"
+	// "path/filepath"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -91,7 +91,7 @@ func (r *NetworkFunctionReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	} */
 
-	
+
 
 	// update status
 	return ctrl.Result{}, nil
