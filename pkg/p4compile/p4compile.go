@@ -93,7 +93,7 @@ func unpackArchive(resp *http.Response, log logr.Logger)(string, string, error){
 	var dplConfigName, p4InfoName string
 
 	for _, entry := range entries {
-		log.Info("reading %s in unpacked dir", entry.Name())
+		log.Info("reading in unpacked dir", entry.Name())
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".dplconfig") {
 			dplConfigName = entry.Name()
 			foundDplConfig = true
@@ -144,7 +144,7 @@ func extractTarGzFlat(archivePath, destDir string, log logr.Logger) error {
 		name := filepath.Base(hdr.Name)
 		target := filepath.Join(destDir, name)
 
-		log.Info("While extracting the archive: file -> %s", name)
+		log.Info("While extracting the archive: file", name)
 
 		out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(hdr.Mode).Perm())
 		if err != nil {
