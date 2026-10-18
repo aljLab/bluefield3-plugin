@@ -39,7 +39,11 @@ func LoadCompiledArchive(ctx context.Context, fileURL string) (*Result, error) {
 		return nil, fmt.Errorf("unpacking archive: %w", err)
 	}
 	
-	defer cleanUp()
+	/* defer func(){
+		err := os.RemoveAll("/tmp/unpack/"); if err != nil {
+		fmt.Printf("Failed cleaning up: removing /tmp/unpack/*: %w", err)
+		}
+	}() */
 	
 	deviceConfigBytes, err := os.ReadFile(fmt.Sprintf("/tmp/unpack/%s", dplConfigName));if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", dplConfigName, err)
@@ -109,7 +113,7 @@ func extractTarGzFlat(archivePath, destDir string) error {
 	if err != nil {
 		return fmt.Errorf("opening archive: %w", err)
 	}
-	defer f.Close()
+	// defer f.Close(), closed later
 
 	gz, err := gzip.NewReader(f)
 	if err != nil {
@@ -135,6 +139,8 @@ func extractTarGzFlat(archivePath, destDir string) error {
 		name := filepath.Base(hdr.Name)
 		target := filepath.Join(destDir, name)
 
+		fmt.Printf("While extracting the archive: file -> %s", name)
+
 		out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(hdr.Mode).Perm())
 		if err != nil {
 			return fmt.Errorf("creating file %s: %w", target, err)
@@ -146,12 +152,6 @@ func extractTarGzFlat(archivePath, destDir string) error {
 		if err := out.Close(); err != nil {
 			return fmt.Errorf("closing file %s: %w", target, err)
 		}
-	}
-}
-
-func cleanUp(){
-	err := os.RemoveAll("/tmp/unpack/"); if err != nil {
-		fmt.Printf("Failed cleaning up: removing /tmp/unpack/*: %w", err)
 	}
 }
 
