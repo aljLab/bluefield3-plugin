@@ -97,12 +97,10 @@ func unpackArchive(resp *http.Response, log logr.Logger)(string, string, error){
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".dplconfig") {
 			dplConfigName = entry.Name()
 			foundDplConfig = true
-			break
 		}
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".p4info.txt") {
 			p4InfoName = entry.Name()
 			foundP4Info = true
-			break
 		}
 	}
 
