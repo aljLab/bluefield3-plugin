@@ -232,7 +232,7 @@ func main() {
 	setupLog.Info("Connecting to P4Runtime client at %s:%s", oobAddr, p4rPort)
 	// Establish gRPC connection and win primary arbitration before creating
 	// managers, so the P4Runtime client can be passed into NewManager.
-	conn, err := grpc.NewClient(oobAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", oobAddr, p4rPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		setupLog.Error(err, "failed to create gRPC client")
 		os.Exit(1)
