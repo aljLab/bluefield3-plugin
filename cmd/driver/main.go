@@ -17,9 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -34,10 +37,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
 	dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
+	"github.com/mantra6g/bluefield3-plugin/networking"
 
 	// +kubebuilder:scaffold:imports
 
@@ -49,6 +56,11 @@ import (
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
+)
+
+const (
+	electionIDHigh = 0
+	electionIDLow  = 1
 )
 
 func init() {
@@ -70,7 +82,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-	var dplAddr, oobAddr, deviceId, dplPort, sharedHostVolumePath string
+	var targetName, dplAddr, oobAddr, deviceId, dplPort, p4rPort, sharedHostVolumePath string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -90,11 +102,14 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.StringVar(&targetName, "target-name", "bf3", "The name of the programmable target.")
 	flag.StringVar(&dplAddr, "dpl-addr", "172.16.44.80", "The IPv4 address of the DPL server.")
 	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card.")
 	flag.StringVar(&dplPort, "dpl-port", "8090", "The HTTP port to use with the Out-Of-Band address for dpl communication.")
+	flag.StringVar(&p4rPort, "p4r-port", "9559", "The gRPC port to use with the Out-Of-Band address for p4runtime communication.")
 	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server.")
 	flag.StringVar(&sharedHostVolumePath, "shared-vol-path", "/tmp/loom", "The path of the directory shared between host and driver.")
+
 	// add ports for the bluefield services
 	opts := zap.Options{
 		Development: true,
@@ -204,24 +219,91 @@ func main() {
 	// win p4 master arbitration (if supported by DPL)
 	setupLog.Info("Establishing controller leadership...")
 	// configure network:
-	setupLog.Info("Starting network configuration")
-	// get driver IP from control interface eth0 (or see in deployment args) -> flannel endpoint in pod namespace
-	setupLog.Info("Looking up driver IP for control interface assigned by primary CNI.")
-	// get netConfig with: ClusterCIDR, ServiceCIDR, (host ns) iface name , (host ns) bridge name
-	setupLog.Info("Requesting P4target configuration from IML daemon...")
-	// let operator assign NfCIDR
-	setupLog.Info("Checking if NfCIDR has been assigned by IML operator...")
-	// move sf's into the pod ns
-	// create bridge br0, veth pair to host bridge
-	// create VRF for NF routes (optional?)
-	// install routes to the cluster, add gateway, routes to control/NfCIDR (for dpcs, nf traffic)
-	// assign first NfCidr ip to pf1, enslave pf1sf0 to bridge br0
-	setupLog.Info("Deploying network configuration...")
+	networking.ConfigureNetwork(setupLog, targetName)
+
 	setupLog.Info("Setup done, registering controllers with Manager.")
 	// netConfig, err := getP4TargetConfigFromIML()
 
 	setupLog.Info("Creating DplClient.")
 	dplClient := dplclient.NewDplClient(dplAddr, dplPort, sharedHostVolumePath)
+
+
+
+	setupLog.Info("Connecting to P4Runtime client at %s:%s", oobAddr, p4rPort)
+	// Establish gRPC connection and win primary arbitration before creating
+	// managers, so the P4Runtime client can be passed into NewManager.
+	conn, err := grpc.NewClient(oobAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		setupLog.Error(err, "failed to create gRPC client")
+		os.Exit(1)
+	}
+	defer func() {
+		if err := conn.Close(); err != nil {
+			setupLog.Error(err, "failed to close gRPC connection")
+		}
+	}()
+	c := p4v1.NewP4RuntimeClient(conn)
+
+
+	// https://networking-docs.nvidia.com/doca/archive/3-5-0/dpl-release-notes#Unsupported-Features
+	// The DPL p4 runtime daemon doesnt support Master Arbitration
+	const maxRetries = 30
+	const retryInterval = 2 * time.Second
+	var connected bool
+	for i := 0; i < maxRetries; i++ {
+		stream, err := c.StreamChannel(context.Background())
+		if err != nil {
+			setupLog.Info(fmt.Sprintf("Switch not ready (attempt %d/%d): %v — retrying in %s",
+				i+1, maxRetries, err, retryInterval))
+			time.Sleep(retryInterval)
+			continue
+		}
+		if err = stream.Send(&p4v1.StreamMessageRequest{
+			Update: &p4v1.StreamMessageRequest_Arbitration{
+				Arbitration: &p4v1.MasterArbitrationUpdate{
+					DeviceId:   1000,
+					ElectionId: &p4v1.Uint128{High: electionIDHigh, Low: electionIDLow},
+				},
+			},
+		}); err != nil {
+			setupLog.Info(fmt.Sprintf("Switch not ready (attempt %d/%d): %v — retrying in %s",
+				i+1, maxRetries, err, retryInterval))
+			time.Sleep(retryInterval)
+			continue
+		}
+		resp, err := stream.Recv()
+		if err != nil {
+			setupLog.Info(fmt.Sprintf("Bluefield not ready (attempt %d/%d): %v — retrying in %s",
+				i+1, maxRetries, err, retryInterval))
+			time.Sleep(retryInterval)
+			continue
+		}
+		if resp.GetArbitration() == nil {
+			setupLog.Info(fmt.Sprintf("Bluefield not ready (attempt %d/%d): unexpected response — retrying in %s",
+				i+1, maxRetries, retryInterval))
+			time.Sleep(retryInterval)
+			continue
+		}
+		go func() {
+			for {
+				if _, err := stream.Recv(); err != nil {
+					setupLog.Error(err, "stream channel closed unexpectedly")
+					return
+				}
+			}
+		}()
+		connected = true
+		break
+	}
+	if !connected {
+		setupLog.Error(
+			fmt.Errorf("could not connect to BlueField3 at %s after %d attempts", oobAddr, maxRetries),
+			"failed to connect to BlueField3",
+		)
+		os.Exit(1)
+	}
+	setupLog.Info(fmt.Sprintf("Connected to BlueField3 at %s (primary arbitration established)", oobAddr))
+
 
 	if err := (&nf.NetworkFunctionReconciler{
 		Client:    mgr.GetClient(),

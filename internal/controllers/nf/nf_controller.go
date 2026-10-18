@@ -72,7 +72,7 @@ func (r *NetworkFunctionReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	// check if network is configured (interfaces up on proxy and proxy <-> BF configured)
 	// update status based on real life
 
-	// fetch program
+	/* // fetch program
 	fileURL := netfunc.Spec.P4File
 	err := r.DplClient.FetchProgram(fileURL); if err != nil {
 		logger.Error(err, "unable to fetch p4 program")
@@ -89,7 +89,7 @@ func (r *NetworkFunctionReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	err = r.DplClient.LoadP4RuntimeShell(filepath.Base(fileURL)); if err != nil {
 		logger.Error(err, "unable to load p4 program")
 		return ctrl.Result{}, err
-	}
+	} */
 
 	
 
