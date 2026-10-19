@@ -42,7 +42,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
-	dplclient "github.com/mantra6g/bluefield3-plugin/client"
+	// dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
 	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
 	"github.com/mantra6g/bluefield3-plugin/networking"
@@ -85,7 +85,8 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-	var targetName, dplAddr, oobAddr, deviceId, dplPort, p4rPort, sharedHostVolumePath string
+	var targetName, oobAddr, deviceId, p4rPort string
+	// var dplAddr, dplPort, sharedHostVolumePath string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -106,12 +107,12 @@ func main() {
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.StringVar(&targetName, "target-name", "bf3", "The name of the programmable target.")
-	flag.StringVar(&dplAddr, "dpl-addr", "172.16.44.80", "The IPv4 address of the DPL server.")
+	// flag.StringVar(&dplAddr, "dpl-addr", "172.16.44.80", "The IPv4 address of the DPL server.")
 	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card.")
-	flag.StringVar(&dplPort, "dpl-port", "8090", "The HTTP port to use with the Out-Of-Band address for dpl communication.")
+	// flag.StringVar(&dplPort, "dpl-port", "8090", "The HTTP port to use with the Out-Of-Band address for dpl communication.")
 	flag.StringVar(&p4rPort, "p4r-port", "9559", "The gRPC port to use with the Out-Of-Band address for p4runtime communication.")
 	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server.")
-	flag.StringVar(&sharedHostVolumePath, "shared-vol-path", "/tmp/loom", "The path of the directory shared between host and driver.")
+	// flag.StringVar(&sharedHostVolumePath, "shared-vol-path", "/tmp/loom", "The path of the directory shared between host and driver.")
 
 	// add ports for the bluefield services
 	opts := zap.Options{
@@ -227,8 +228,8 @@ func main() {
 	setupLog.Info("Setup done, registering controllers with Manager.")
 	// netConfig, err := getP4TargetConfigFromIML()
 
-	setupLog.Info("Creating DplClient.")
-	dplClient := dplclient.NewDplClient(dplAddr, dplPort, sharedHostVolumePath)
+	/* setupLog.Info("Creating DplClient.")
+	dplClient := dplclient.NewDplClient(dplAddr, dplPort, sharedHostVolumePath) */
 
 
 	setupLog.Info(fmt.Sprintf("Connecting to P4Runtime client at %s:%s", oobAddr, p4rPort))
@@ -324,7 +325,7 @@ func main() {
 	if err := (&nf.NetworkFunctionReconciler{
 		Client:    mgr.GetClient(),
 		Scheme:    mgr.GetScheme(),
-		DplClient: dplClient,
+		// DplClient: dplClient,
 		NFManager: nfMgr,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "networkfunction")

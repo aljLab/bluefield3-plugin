@@ -121,7 +121,7 @@ func (m *RealManager) EnsureAbsent(ctx context.Context, nfKey client.ObjectKey) 
 		opType: opAbsent,
 	}
 
-	// go m.runDeletion(ctx, h, nfKey)
+	go m.runDeletion(ctx, h, nfKey)
 
 	return h
 }
@@ -170,13 +170,13 @@ func (m *RealManager) runDeployment(ctx context.Context, h *deploymentHandle, nf
 		return
 	}
 
-	/* logger.V(1).Info("Running pre-deployment checks")
+	logger.V(1).Info("Running pre-deployment checks")
 	h.transition(PhasePreCheck, "running pre-deployment checks", nil)
 	if err := m.preCheck(ctx, nf); err != nil {
 		logger.V(1).Error(err, "pre-check failed")
 		h.transition(PhaseFailed, "pre-check failed", err)
 		return
-	} */
+	}
 
 	logger.V(1).Info("Deploying network function")
 	h.transition(PhaseDeploying, "deploying network function", nil)
@@ -208,11 +208,15 @@ func (m *RealManager) compile(ctx context.Context, nf *corev1alpha1.NetworkFunct
 	var err error
 
 	if strings.HasPrefix(p4File, "http://") || strings.HasPrefix(p4File, "https://") || strings.HasPrefix(p4File, "s3://") {
-		result, compileErr := p4compile.LoadCompiledArchive(ctx, p4File, m.log)
-		if compileErr != nil {
-			err = compileErr
+		if strings.HasSuffix(p4File, ".tar.gz") {
+			result, compileErr := p4compile.LoadCompiledArchive(ctx, p4File)
+			if compileErr != nil {
+				err = compileErr
+			} else {
+				program = &api.P4Program{P4DeviceConfig: result.DeviceConfig, ProgramName: nf.Name, P4Info: result.P4Info}
+			}
 		} else {
-			program = &api.P4Program{P4DeviceConfig: result.DeviceConfig, ProgramName: nf.Name, P4Info: result.P4Info}
+			// use dpl client
 		}
 	} else {
 		// Treat as base64-encoded pre-compiled BMv2 JSON device config.
@@ -226,7 +230,7 @@ func (m *RealManager) compile(ctx context.Context, nf *corev1alpha1.NetworkFunct
 	return nil
 }
 
-/* // preCheck verifies there are available NF slots and table entries before deploying.
+// preCheck verifies there are available NF slots and table entries before deploying.
 func (m *RealManager) preCheck(ctx context.Context, _ *corev1alpha1.NetworkFunction) error {
 	deployed := 0
 	for _, op := range m.ops {
@@ -258,7 +262,7 @@ func (m *RealManager) preCheck(ctx context.Context, _ *corev1alpha1.NetworkFunct
 	//}
 
 	return nil
-} */
+}
 
 // deploy pushes the compiled P4 program to the BMv2 switch. If the switch
 // already has an identical program loaded (e.g. after a driver restart), the
@@ -323,7 +327,7 @@ func (m *RealManager) configureTrafficForwardingToNetworkFunctionInterface(nfIP 
 		return fmt.Errorf("failed to add address for NF IP %s: %w", nfIP.String(), err)
 	}
 	return nil
-}
+}*/
 
 func (m *RealManager) runDeletion(ctx context.Context, h *deploymentHandle, nfKey client.ObjectKey) {
 	m.mu.Lock()
@@ -356,7 +360,7 @@ func (m *RealManager) runDeletion(ctx context.Context, h *deploymentHandle, nfKe
 	h.transition(PhaseDeleted, "successfully deleted", nil)
 }
 
-// drain is a no-op for BMv2: the switch has no per-NF traffic queuing to flush.
+// drain/flush operation is not documented by NVIDIA
 func (m *RealManager) drain(_ context.Context, _ client.ObjectKey) error {
 	return nil
 }
@@ -368,7 +372,7 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 	if !ok {
 		return nil // no tracked op for this NF, so nothing to delete
 	}
-	program, ok := m.programs[nfKey]
+	// program, ok := m.programs[nfKey]
 	if !ok {
 		delete(m.ops, nfKey) // no compiled program, so just remove the op tracking
 		return nil           // no compiled program, so nothing was deployed; just remove the op tracking
@@ -382,9 +386,9 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 		return nil
 	}
 
-	if err := m.teardownNetworkForwarding(program.IP, m.nfInterface); err != nil {
+	/* if err := m.teardownNetworkForwarding(program.IP, m.nfInterface); err != nil {
 		return fmt.Errorf("tearing down network forwarding: %w", err)
-	}
+	} */
 
 	reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -395,7 +399,7 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 
 	return nil
 }
-
+/*
 // teardownNetworkForwarding removes the host route and neighbor entry that were
 // installed by configureTrafficForwardingToNetworkFunctionInterface when the NF was deployed.
 func (m *RealManager) teardownNetworkForwarding(nfIP netip.Prefix, nfIfaceName string) error {

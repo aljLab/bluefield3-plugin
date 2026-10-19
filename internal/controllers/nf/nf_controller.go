@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	dplclient "github.com/mantra6g/bluefield3-plugin/client"
+	// dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
 )
 
@@ -39,7 +39,7 @@ import (
 type NetworkFunctionReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
-	DplClient *dplclient.DplClient
+	// DplClient *dplclient.DplClient
 	NFManager nfmgr.Manager
 }
 
