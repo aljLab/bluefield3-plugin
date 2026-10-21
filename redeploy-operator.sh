@@ -17,13 +17,13 @@ docker image rm bluefield3-operator:local || true
 echo
 echo "==> Building docker image with new controller files..."
 echo
-make docker-build-driver IMG_OPERATOR="bluefield3-operator:local"
+make docker-build-operator IMG_OPERATOR="bluefield3-operator:local"
 
 # load image into ctr
 echo
 echo "==> Importing the docker image to ctr k8s.io namespace..."
 echo
-docker save -o /tmp/driver.tar bluefield3-operator:local
+docker save -o /tmp/operator.tar bluefield3-operator:local
 sudo ctr -n k8s.io images import /tmp/operator.tar
 rm /tmp/operator.tar
 
