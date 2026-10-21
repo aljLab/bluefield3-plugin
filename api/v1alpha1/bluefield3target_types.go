@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -27,6 +28,17 @@ const (
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type ResourceRequirements struct {
+	// Limits describes the maximum amount of compute resources allowed for the target.
+	// The values of the map are string quantities, e.g. "100m" for CPU or "1Gi" for memory.
+	// +optional
+	Limits corev1.ResourceList `json:"limits"`
+
+	// Requests describes the minimum amount of compute resources required for the target.
+	// The values of the map are string quantities, e.g. "100m" for CPU or "1Gi" for memory.
+	// +optional
+	Requests corev1.ResourceList `json:"requests"`
+}
 
 // BlueField3TargetSpec defines the desired state of BlueField3Target
 type BlueField3TargetSpec struct {
@@ -43,7 +55,12 @@ type BlueField3TargetSpec struct {
 
 	// +required
 	NodeName *string `json:"nodeName"`
+	
+	// +optional
+	Resources ResourceRequirements `json:"resources,omitempty,omitzero"`
 }
+
+
 
 // BlueField3TargetStatus defines the observed state of BlueField3Target.
 type BlueField3TargetStatus struct {
