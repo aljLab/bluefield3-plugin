@@ -24,7 +24,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: bluefield3-plugin
-  namespace: default
+  namespace: bluefield3-plugin
 ---
 apiVersion: v1
 kind: Service
@@ -45,7 +45,7 @@ metadata:
     app: bluefield3-operator
 spec:
   restartPolicy: OnFailure
-
+  serviceAccountName: bluefield3-plugin # controller-manager
   containers:
   - name: bluefield3-operator
     image: bluefield3-operator:local
