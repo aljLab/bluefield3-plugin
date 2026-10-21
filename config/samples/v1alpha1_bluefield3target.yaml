@@ -1,4 +1,4 @@
-apiVersion: my.domain/v1alpha1
+apiVersion: plugins.loom.io/v1alpha1
 kind: BlueField3Target
 metadata:
   labels:

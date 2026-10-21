@@ -46,9 +46,9 @@ type NetworkFunctionReconciler struct {
 	P4TargetManager p4tmgr.Manager
 }
 
-// +kubebuilder:rbac:groups=my.domain,resources=networkfunctions,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=my.domain,resources=networkfunctions/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=my.domain,resources=networkfunctions/finalizers,verbs=update
+// +kubebuilder:rbac:groups=plugins.loom.io,resources=networkfunctions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=plugins.loom.io,resources=networkfunctions/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=plugins.loom.io,resources=networkfunctions/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

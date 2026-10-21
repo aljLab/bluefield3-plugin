@@ -18,7 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	net_utils "github.com/mantra6g/bluefield3-plugin/networking"
-	// "github.com/mantra6g/bluefield3-plugin/pkg/api/v1alpha1"
+	// "github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
 	"github.com/mantra6g/bluefield3-plugin/pkg/ipam"
 )
 

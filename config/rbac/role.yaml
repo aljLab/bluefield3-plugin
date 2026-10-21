@@ -5,11 +5,9 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - my.domain
+  - ""
   resources:
-  - bluefield3targets
-  - networkfunctions
-  - servicechains
+  - namespaces
   verbs:
   - create
   - delete
@@ -19,19 +17,54 @@ rules:
   - update
   - watch
 - apiGroups:
-  - my.domain
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - core.loom.io
+  resources:
+  - p4targets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - plugins.loom.io
+  resources:
+  - bluefield3targets
+  - networkfunctions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - plugins.loom.io
   resources:
   - bluefield3targets/finalizers
   - networkfunctions/finalizers
-  - servicechains/finalizers
   verbs:
   - update
 - apiGroups:
-  - my.domain
+  - plugins.loom.io
   resources:
   - bluefield3targets/status
   - networkfunctions/status
-  - servicechains/status
   verbs:
   - get
   - patch

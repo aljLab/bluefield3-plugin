@@ -31,7 +31,7 @@ import (
 
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
 	bf3util "github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
-	"github.com/mantra6g/bluefield3-plugin/pkg/api/v1alpha1"
+	"github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 )

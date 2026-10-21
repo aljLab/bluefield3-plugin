@@ -4,15 +4,15 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.22.0
-  name: bluefield3targets.my.domain
+  name: bluefield3targets.plugins.loom.io
 spec:
-  group: my.domain
+  group: plugins.loom.io
   names:
     kind: BlueField3Target
     listKind: BlueField3TargetList
     plural: bluefield3targets
     singular: bluefield3target
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:

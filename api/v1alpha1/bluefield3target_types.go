@@ -67,6 +67,7 @@ type BlueField3TargetStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:scope=Cluster
 
 // BlueField3Target is the Schema for the bluefield3targets API
 type BlueField3Target struct {

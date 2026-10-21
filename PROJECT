@@ -3,25 +3,25 @@
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
 cliVersion: 4.16.0
-domain: my.domain
+domain: plugins.loom.io
 layout:
 - go.kubebuilder.io/v4
 projectName: bluefield3-plugin
 repo: github.com/mantra6g/bluefield3-plugin
 resources:
 - controller: true
-  domain: my.domain
+  domain: plugins.loom.io
   kind: NetworkFunction
   version: v1alpha1
 - controller: true
-  domain: my.domain
+  domain: plugins.loom.io
   kind: ServiceChain
   version: v1alpha1
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: my.domain
+  domain: plugins.loom.io
   kind: BlueField3Target
   path: github.com/mantra6g/bluefield3-plugin/api/v1alpha1
   version: v1alpha1

@@ -51,7 +51,7 @@ import (
 
 	// +kubebuilder:scaffold:imports
 
-	v1alpha1 "github.com/mantra6g/bluefield3-plugin/pkg/api/v1alpha1"
+	v1alpha1 "github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	infrav1alpha1 "github.com/mantra6g/iml/api/infra/v1alpha1"
 	schedulingv1alpha1 "github.com/mantra6g/iml/api/scheduling/v1alpha1"
@@ -217,7 +217,7 @@ func main() {
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "cf74b3b4.my.domain",
+		LeaderElectionID:       "cf74b3b4.plugins.loom.io",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

@@ -1,7 +1,7 @@
 package p4target
 
 import (
-	apiv1alpha1 "github.com/mantra6g/bluefield3-plugin/pkg/api/v1alpha1"
+	apiv1alpha1 "github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 )
 

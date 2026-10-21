@@ -11,7 +11,7 @@ import (
 	"time"
 
 	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
-	"github.com/mantra6g/bluefield3-plugin/pkg/api"
+	"github.com/mantra6g/bluefield3-plugin/api"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4client"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4compile"
 

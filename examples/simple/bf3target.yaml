@@ -1,4 +1,4 @@
-apiVersion: infra.loom.io/v1alpha1
+apiVersion: plugins.loom.io/v1alpha1
 kind: BlueField3Target
 metadata:
   name: bf3-target
