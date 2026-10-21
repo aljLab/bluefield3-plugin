@@ -37,17 +37,21 @@ Traffic will flow like this:
 
 ### Networking Configuration Flow
 When the driver pod is created, Multus sends ADD requests to the primary (e.g. flannel) and secondary (IML) CNI.
-The primary CNI assigns a pod IP in the node's PodCIDR (e.g. 10.244.0.0/24 for flannel). The IML CNI does additional configuration.
+The primary CNI assigns a pod IP in the node's PodCIDR (e.g. 10.244.0.0/24 for flannel). The IML CNI does additional configuration, that is performing actions which require configuration of the host net namespace.
+The IML CNI could be extended to react to a new AppType (e.g. `HardwareDriver`) taking arguments such as `MoveInterfaces` (specifying interfaces (to expose VFs (SR-IOV) or SFs directly to the pod) to be moved into the pod namespace).
+The CNI would take care of necessary host net ns configurations and allocation and assignment of IP addresses, including:
+- fetching P4Target `NetConfig` object from the CNI server (IML daemon)
+  > The `NetConfig` object contains information on: the dual stack IPs to assign to `iml0`, the IPv6 cluster CIDR, the dual stack Gateway IPs (the IPs of the routing bridge), the name of the routing bridge, the name of the veth-peer connected to `iml0`, and the supported MTU.
+- creating a veth pair to connect the pod to the routing bridge (move veth-peer `iml0` to pod net ns)
+- assigning the `NetConfig.IPNet` (TargetIP) to `iml0`
+- moving all interfaces specified by `MoveInterfaces` into the pod namespace
+- setting the network annotations `k8s.v1.cni.cncf.io/network-status` 
+  
 Then the pod starts and `driver/main.go` runs, where the driver IP can be discovered from the corresponding interface. The address can be used to bind DPCS and a metrics server.
 The `NfCidr` (IPv6 CIDR to allocate IPs for network functions on the target) is allocated by the P4Target controller in the IML operator. The driver's P4TargetController waits for this assignment to happen.
-The network configuration of the pod network itself could be achieved in the CNI component by specifying a new application type. For now, I'll configure the network after the `NfCidr` has been allocated.
-To this end, I'll retrieve a `NetConfig` object from the IML daemon running on the node (registering a P4target). The `NetConfig` object contains information on: the dual stack IPs to assign to `iml0`, the IPv6 cluster CIDR, the dual stack Gateway IPs (the IPs of the routing bridge), the name of the routing bridge, the name of the veth-peer connected to `iml0`, and the supported MTU.
+For now, I'll configure the network after the `NfCidr` has been allocated.
 
-> To be considered: Who sets the network annotations `k8s.v1.cni.cncf.io/network-status` on the pod spec?
-
-With the relevant information acquired, I can perform the following configuration steps:
-- move two BlueField interfaces (`bf0`, `bf1` here, actual names are passed in `BlueField3Target` deployment) into the namespace of the Pod
-- assign the IPs received from the `NetConfig` to `iml0`
+With the relevant information acquired, the P4TargetManager can ensure the following configurations:
 - create default routes via the gateways provided in the `NetConfig` object (IPv4/IPv6)
   - `<clusterCIDR> via <Gateway> dev iml0`
 - publish the driverIP + targetIP (`NetConfig.IPNet`) in P4Target Resource
