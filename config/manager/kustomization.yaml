@@ -6,9 +6,3 @@ images:
 - name: controller
   newName: bluefield3-operator
   newTag: local
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-command:
-- name: controller
-  newName: bluefield3-operator
-  newTag: local
