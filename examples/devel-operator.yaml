@@ -23,7 +23,7 @@ roleRef:
   name: bluefield3-operator
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: bluefield3-plugin
   namespace: default
 ---
 apiVersion: v1
