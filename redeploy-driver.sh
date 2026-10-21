@@ -5,13 +5,13 @@ set -euo pipefail
 echo
 echo "==> Deleting old deployment"
 echo
-kubectl delete -f examples/devel.yaml
+kubectl delete -f examples/devel.yaml --ignore-not-found=true
 
 # delete old image
 echo
 echo "==> removing outdated docker image..."
 echo
-docker image rm bluefield3-driver:local
+docker image rm bluefield3-driver:local || true
 
 # rebuild image
 echo
