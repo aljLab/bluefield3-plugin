@@ -45,7 +45,7 @@ metadata:
     app: bluefield3-operator
 spec:
   restartPolicy: OnFailure
-  serviceAccountName: bluefield3-plugin # controller-manager
+  serviceAccountName: controller-manager
   containers:
   - name: bluefield3-operator
     image: bluefield3-operator:local
