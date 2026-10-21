@@ -62,7 +62,7 @@ type BlueField3TargetReconciler struct {
 func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(1).Info("Reconciling BlueField3Target")
-
+	
 	bf3Target := &v1alpha1.BlueField3Target{}
 	err := r.Get(ctx, req.NamespacedName, bf3Target)
 	if err != nil {
@@ -73,7 +73,11 @@ func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Error(err, "unable to fetch BlueField3Target")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
+	
+	logger.V(1).Info("Checking Args", "NodeName", *bf3Target.Spec.NodeName)
+	logger.V(1).Info("Checking Args", "inIface", *bf3Target.Spec.InInterface)
+	logger.V(1).Info("Checking Args", "outIface", *bf3Target.Spec.OutInterface)
+	
 	// deploy driver pod
 	_, err = r.ensureDeployment(ctx, bf3Target)
 	if err != nil {
