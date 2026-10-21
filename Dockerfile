@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o dr
 
 # Build the manager binary
 FROM base AS operator-builder
-RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o manager ./cmd/operator
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o operator ./cmd/operator
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
@@ -40,8 +40,8 @@ ENTRYPOINT ["/driver"]
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot AS operator
 WORKDIR /
-COPY --from=operator-builder /workspace/manager .
+COPY --from=operator-builder /workspace/operator .
 
 USER 65532:65532
 
-ENTRYPOINT ["/manager"]
+ENTRYPOINT ["/operator"]
