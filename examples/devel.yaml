@@ -54,7 +54,6 @@ spec:
       capabilities:
         add: ["NET_ADMIN"]
     args: [
-      "--dpl-addr=172.16.44.80",
       "--oob-addr=172.16.44.81",
       "--device-id=1000",
       "--targetName"
