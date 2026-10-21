@@ -19,6 +19,7 @@ package nf
 import (
 	"context"
 	"net/netip"
+
 	// "path/filepath"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,6 +34,7 @@ import (
 
 	// dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
+	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
 )
 
 // NetworkFunctionReconciler reconciles a NetworkFunction object
@@ -40,7 +42,8 @@ type NetworkFunctionReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	// DplClient *dplclient.DplClient
-	NFManager nfmgr.Manager
+	NFManager       nfmgr.Manager
+	P4TargetManager p4tmgr.Manager
 }
 
 // +kubebuilder:rbac:groups=my.domain,resources=networkfunctions,verbs=get;list;watch;create;update;patch;delete

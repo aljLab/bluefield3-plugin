@@ -1,12 +1,12 @@
-
 package p4client
+
 import (
-	"github.com/mantra6g/bluefield3-plugin/pkg/p4rutils"
 	"context"
 	"fmt"
+	"github.com/mantra6g/bluefield3-plugin/pkg/p4rutils"
 	"io"
 
-	"github.com/mantra6g/bluefield3-plugin/api"
+	"github.com/mantra6g/bluefield3-plugin/pkg/api"
 
 	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )

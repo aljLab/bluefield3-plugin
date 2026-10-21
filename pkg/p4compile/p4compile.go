@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	// "time"
-	"google.golang.org/protobuf/encoding/prototext"
 	p4configv1 "github.com/p4lang/p4runtime/go/p4/config/v1"
+	"google.golang.org/protobuf/encoding/prototext"
 )
 
 // Result holds the output of a successful P4 compilation.
@@ -36,20 +36,24 @@ func LoadCompiledArchive(ctx context.Context, fileURL string) (*Result, error) {
 	}
 
 	// unpacks archive and returns file names
-	dplConfigName, p4InfoName, err := unpackArchive(resp, unpackDir); if err != nil {
+	dplConfigName, p4InfoName, err := unpackArchive(resp, unpackDir)
+	if err != nil {
 		return nil, fmt.Errorf("unpacking archive: %w", err)
 	}
-	
-	defer func(){
-		err := os.RemoveAll(unpackDir); if err != nil {
-		fmt.Printf("Failed cleaning up: removing %s/*: %s", unpackDir, err)
+
+	defer func() {
+		err := os.RemoveAll(unpackDir)
+		if err != nil {
+			fmt.Printf("Failed cleaning up: removing %s/*: %s", unpackDir, err)
 		}
 	}()
-	
-	deviceConfigBytes, err := os.ReadFile(fmt.Sprintf("%s/%s", unpackDir, dplConfigName));if err != nil {
+
+	deviceConfigBytes, err := os.ReadFile(fmt.Sprintf("%s/%s", unpackDir, dplConfigName))
+	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", dplConfigName, err)
 	}
-	p4infoBytes, err := os.ReadFile(fmt.Sprintf("%s/%s", unpackDir, p4InfoName));if err != nil {
+	p4infoBytes, err := os.ReadFile(fmt.Sprintf("%s/%s", unpackDir, p4InfoName))
+	if err != nil {
 		return nil, fmt.Errorf("reading p4info: %w", err)
 	}
 
@@ -61,15 +65,16 @@ func LoadCompiledArchive(ctx context.Context, fileURL string) (*Result, error) {
 
 	return &Result{
 		DeviceConfig: deviceConfigBytes,
-		P4Info: &p4info,
+		P4Info:       &p4info,
 	}, nil
 }
 
-// unpackArchive copies the archive from the response into a tmp dir 
-// -> unpacks the compiled artifacts: *.p4info.txt, *.dplconfig 
+// unpackArchive copies the archive from the response into a tmp dir
+// -> unpacks the compiled artifacts: *.p4info.txt, *.dplconfig
 // -> returns their filenames in /tmp/unpack
-func unpackArchive(resp *http.Response, unpackDir string)(string, string, error){
-	err := os.MkdirAll("/tmp/unpack", 0755); if err != nil {
+func unpackArchive(resp *http.Response, unpackDir string) (string, string, error) {
+	err := os.MkdirAll("/tmp/unpack", 0755)
+	if err != nil {
 		return "", "", fmt.Errorf("while creating /tmp/unpack: %w", err)
 	}
 
@@ -83,12 +88,14 @@ func unpackArchive(resp *http.Response, unpackDir string)(string, string, error)
 	if _, err := io.Copy(f, resp.Body); err != nil {
 		return "", "", fmt.Errorf("writing archive file: %w", err)
 	}
-	
-	err = extractTarGzFlat(f, unpackDir); if err != nil {
+
+	err = extractTarGzFlat(f, unpackDir)
+	if err != nil {
 		return "", "", fmt.Errorf("extracting archive file to /tmp/unpack: %w", err)
 	}
 
-	entries, err := os.ReadDir(unpackDir); if err != nil {
+	entries, err := os.ReadDir(unpackDir)
+	if err != nil {
 		return "", "", fmt.Errorf("while reading /tmp/unpack: %w", err)
 	}
 
@@ -109,7 +116,7 @@ func unpackArchive(resp *http.Response, unpackDir string)(string, string, error)
 	if !foundDplConfig || !foundP4Info {
 		return "", "", fmt.Errorf("Archive did not contain the expected artifacts (*.dplconfig, *.p4info.txt)")
 	}
-	
+
 	return dplConfigName, p4InfoName, nil
 }
 
@@ -137,7 +144,6 @@ func extractTarGzFlat(f *os.File, destDir string) error {
 
 		name := filepath.Base(hdr.Name)
 		target := filepath.Join(destDir, name)
-
 
 		out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(hdr.Mode).Perm())
 		if err != nil {

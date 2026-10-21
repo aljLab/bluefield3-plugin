@@ -19,21 +19,36 @@ package bf3
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
+	bf3util "github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
+	"github.com/mantra6g/bluefield3-plugin/pkg/api/v1alpha1"
+	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 // BlueField3TargetReconciler reconciles a BlueField3Target object
 type BlueField3TargetReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+	Config *util.Bf3DriverConfig
 }
 
-// +kubebuilder:rbac:groups=my.domain,resources=bluefield3targets,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=my.domain,resources=bluefield3targets/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=my.domain,resources=bluefield3targets/finalizers,verbs=update
+// +kubebuilder:rbac:groups=plugins.loom.io,resources=bluefield3targets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=plugins.loom.io,resources=bluefield3targets/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=plugins.loom.io,resources=bluefield3targets/finalizers,verbs=update
+// +kubebuilder:rbac:groups=core.loom.io,resources=p4targets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -45,9 +60,27 @@ type BlueField3TargetReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.25.0/pkg/reconcile
 func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
+	logger := logf.FromContext(ctx)
+	logger.V(1).Info("Reconciling BlueField3Target")
 
-	// TODO(user): your logic here
+	bf3Target := &v1alpha1.BlueField3Target{}
+	err := r.Get(ctx, req.NamespacedName, bf3Target)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Info("BlueField3Target resource not found. Ignoring since object must be deleted.")
+			return ctrl.Result{}, nil
+		}
+		logger.Error(err, "unable to fetch BlueField3Target")
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// deploy driver pod
+	_, err = r.ensureDeployment(ctx, bf3Target)
+	if err != nil {
+		logger.Error(err, "failed to ensure bf3Target has correct defaults and finalizers")
+		return ctrl.Result{}, err
+	}
+	// update status
 
 	return ctrl.Result{}, nil
 }
@@ -55,8 +88,29 @@ func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 // SetupWithManager sets up the controller with the Manager.
 func (r *BlueField3TargetReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
-		// For().
-		Named("bluefield3target").
+		For(&v1alpha1.BlueField3Target{}).
+		Owns(&corev1alpha1.P4Target{}).
+		Owns(&appsv1.Deployment{},
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Named("infra-bluefield3target").
 		Complete(r)
+}
+
+func (r *BlueField3TargetReconciler) ensureDeployment(ctx context.Context,
+	target *v1alpha1.BlueField3Target) (*appsv1.Deployment, error) {
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      target.Name,
+			Namespace: r.Config.PodNamespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrPatch(ctx, r.Client, dep, func() error {
+		dep.Labels = bf3util.EnsureBf3DeploymentLabels(target, dep.Labels)
+		dep.Annotations = bf3util.EnsureBf3DeploymentAnnotations(target, dep.Annotations)
+		dep.Finalizers = bf3util.EnsureBf3DeploymentFinalizers(target, dep.Finalizers)
+		dep.Spec = *bf3util.EnsureBf3DeploymentSpec(target, &dep.Spec, r.Config)
+		return controllerutil.SetControllerReference(target, dep, r.Scheme) // BlueField3Target owns Deployment
+	})
+	return dep, err
 }

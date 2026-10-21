@@ -36,12 +36,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
+	v1alpha1 "github.com/mantra6g/bluefield3-plugin/pkg/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 
-	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	infrav1alpha1 "github.com/mantra6g/iml/api/infra/v1alpha1"
 	schedulingv1alpha1 "github.com/mantra6g/iml/api/scheduling/v1alpha1"
+
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3"
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
 )
 
 var (
@@ -54,6 +57,7 @@ func init() {
 	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(infrav1alpha1.AddToScheme(scheme))
 	utilruntime.Must(schedulingv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -68,7 +72,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-	var dplAddr, oobAddr, deviceId, dplPort, sharedHostVolumePath string
+	var nodeName string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -88,12 +92,8 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.StringVar(&dplAddr, "dpl-addr", "172.16.44.80", "The IPv4 address of the DPL server.")
-	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card.")
-	flag.StringVar(&dplPort, "dpl-port", "8090", "The HTTP port to use with the Out-Of-Band address for dpl communication.")
-	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server.")
-	flag.StringVar(&sharedHostVolumePath, "shared-vol-path", "/tmp/loom", "The path of the directory shared between host and driver.")
-	// add ports for the bluefield services
+	flag.StringVar(&nodeName, "node-name", "", "The hostname of the node with installed Bluefield 3 DPU.")
+
 	opts := zap.Options{
 		Development: true,
 	}
@@ -194,9 +194,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	conf := util.Bf3DriverConfig{
+		ContainerName: "bluefield3-driver",
+		DriverImage:   "bluefield3-driver:local",
+		PodNamespace:  "loom-system",
+		NodeName:      nodeName,
+	}
+
 	if err := (&bf3.BlueField3TargetReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		Config: &conf,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "bluefield3target")
 		os.Exit(1)

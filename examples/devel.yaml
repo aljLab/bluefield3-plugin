@@ -57,8 +57,7 @@ spec:
       "--dpl-addr=172.16.44.80",
       "--oob-addr=172.16.44.81",
       "--device-id=1000",
-      "--dpl-port=8090",
-      "--shared-vol-path=/tmp/loom",
+      "--targetName"
       ]
     resources:
       requests:

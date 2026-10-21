@@ -1,0 +1,74 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: bluefield3-operator
+rules:
+- apiGroups: ["core.loom.io", "infra.loom.io", "scheduling.loom.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bluefield3-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: bluefield3-operator
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bluefield3-operator
+spec:
+  selector:
+    app: bluefield3-operator
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bluefield3-operator-pod
+  labels:
+    app: bluefield3-operator
+spec:
+  restartPolicy: OnFailure
+
+  containers:
+  - name: bluefield3-operator
+    image: bluefield3-operator:local
+    imagePullPolicy: Never
+    securityContext:
+      capabilities:
+        add: ["NET_ADMIN"]
+    args: [
+      "--node-name=dtn-04"
+    ]
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+    env:
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace

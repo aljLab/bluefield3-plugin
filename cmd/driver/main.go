@@ -17,17 +17,21 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"net"
 	"os"
-	"time"
+	// "time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
+	"github.com/vishvananda/netlink"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -37,19 +41,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
 	// dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
 	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
-	"github.com/mantra6g/bluefield3-plugin/networking"
+	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4client"
 
 	// +kubebuilder:scaffold:imports
 
+	v1alpha1 "github.com/mantra6g/bluefield3-plugin/pkg/api/v1alpha1"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	infrav1alpha1 "github.com/mantra6g/iml/api/infra/v1alpha1"
 	schedulingv1alpha1 "github.com/mantra6g/iml/api/scheduling/v1alpha1"
@@ -71,6 +73,7 @@ func init() {
 	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(infrav1alpha1.AddToScheme(scheme))
 	utilruntime.Must(schedulingv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -85,8 +88,8 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-	var targetName, oobAddr, deviceId, p4rPort string
-	// var dplAddr, dplPort, sharedHostVolumePath string
+	var maxNFSlots int
+	var targetName, oobAddr, deviceId, p4rPort, dataIface, controlIface string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -106,15 +109,16 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.StringVar(&targetName, "target-name", "bf3", "The name of the programmable target.")
-	// flag.StringVar(&dplAddr, "dpl-addr", "172.16.44.80", "The IPv4 address of the DPL server.")
 	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card.")
-	// flag.StringVar(&dplPort, "dpl-port", "8090", "The HTTP port to use with the Out-Of-Band address for dpl communication.")
-	flag.StringVar(&p4rPort, "p4r-port", "9559", "The gRPC port to use with the Out-Of-Band address for p4runtime communication.")
-	flag.StringVar(&deviceId, "device-id", "1000", "The device-ID to use when communicating with DPL P4Runtime server.")
-	// flag.StringVar(&sharedHostVolumePath, "shared-vol-path", "/tmp/loom", "The path of the directory shared between host and driver.")
+	flag.StringVar(&p4rPort, "p4r-port", "9559",
+		"The gRPC port to use with the Out-Of-Band address for p4runtime communication.")
+	flag.StringVar(&deviceId, "device-id", "1000",
+		"The device-ID to use when communicating with DPL P4Runtime server.")
+	flag.IntVar(&maxNFSlots, "max-nf-slots", 1, "The maximum amount of schedulable NFs on the target at the same time.")
+	flag.StringVar(&targetName, "target-name", "bf3", "The name of the programmable target.")
+	flag.StringVar(&dataIface, "data-iface", "iml0", "Interface to discover target IPs from.")
+	flag.StringVar(&controlIface, "control-iface", "eth0", "Network interface to discover driver IPs from")
 
-	// add ports for the bluefield services
 	opts := zap.Options{
 		Development: true,
 	}
@@ -191,6 +195,22 @@ func main() {
 		metricsServerOptions.KeyName = metricsCertKey
 	}
 
+	// discover targetIPs (NetworkConfig.IPNet) from interface iml0 (set up by CNI deployment)
+	targetIPs, err := discoverIPs(dataIface)
+	if err != nil {
+		setupLog.Error(err, "failed to discover target IPs", "iface", dataIface)
+		os.Exit(1)
+	}
+	setupLog.Info(fmt.Sprintf("Discovered target IPs on %s: %v", dataIface, targetIPs))
+
+	// fetch IP assigned by primary CNI via the container interface (veth-peer) connected to the (primary) CNI bridge
+	driverIPs, err := discoverIPs(controlIface)
+	if err != nil {
+		setupLog.Error(err, "failed to discover driver IPs", "iface", controlIface)
+		os.Exit(1)
+	}
+	setupLog.Info(fmt.Sprintf("Discovered driver IPs on %s: %v", controlIface, driverIPs))
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
@@ -215,23 +235,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Do custom logic here:
-	// check status of DPL devel container
-	setupLog.Info("Checking status of DPL development Container.")
-	// connect to bluefield
-	setupLog.Info("Connecting to DPL P4runtime server")
-	// win p4 master arbitration (if supported by DPL)
-	setupLog.Info("Establishing controller leadership...")
-	// configure network:
-	networking.ConfigureNetwork(setupLog, targetName)
-
-	setupLog.Info("Setup done, registering controllers with Manager.")
-	// netConfig, err := getP4TargetConfigFromIML()
-
-	/* setupLog.Info("Creating DplClient.")
-	dplClient := dplclient.NewDplClient(dplAddr, dplPort, sharedHostVolumePath) */
-
-
 	setupLog.Info(fmt.Sprintf("Connecting to P4Runtime client at %s:%s", oobAddr, p4rPort))
 	// Establish gRPC connection and win primary arbitration before creating
 	// managers, so the P4Runtime client can be passed into NewManager.
@@ -247,10 +250,9 @@ func main() {
 	}()
 	c := p4v1.NewP4RuntimeClient(conn)
 
-
 	// https://networking-docs.nvidia.com/doca/archive/3-5-0/dpl-release-notes#Unsupported-Features
-	// The DPL p4 runtime daemon doesnt support Master Arbitration
-	const maxRetries = 30
+	// The DPL p4 runtime daemon doesnt support Master Arbitration: the first attempt succeeds, successive fail
+	/* const maxRetries = 30
 	const retryInterval = 2 * time.Second
 	var connected bool
 	for i := 0; i < maxRetries; i++ {
@@ -304,17 +306,32 @@ func main() {
 			"failed to connect to BlueField3",
 		)
 		os.Exit(1)
-	}
-	setupLog.Info(fmt.Sprintf("Connected to BlueField3 at %s (primary arbitration established)", oobAddr))
+	}*/
+	setupLog.Info(fmt.Sprintf("Connected to BlueField3 at %s:%s", oobAddr, p4rPort))
 
 	// create Bf3Client to pass to NF-Manager
 	bf3Client := p4client.NewBf3Client(c, defaultDeviceID, electionIDHigh, electionIDLow)
+
+
+	p4targetMgr, err := p4tmgr.NewManager(p4tmgr.ManagerConfig{
+		Name:       targetName,
+		P4Client:   c,
+		MaxNFSlots: maxNFSlots,
+		TargetIPs:  targetIPs,
+		DriverIPs:  driverIPs,
+		BridgeName: "br0",
+		Log:        ctrl.Log.WithName("p4target-manager"),
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to create p4target manager")
+		os.Exit(1)
+	}
+
 	// create NFManager
 	nfMgr, err := nfmgr.NewManager(nfmgr.ManagerConfig{
 		Bf3Client:       bf3Client,
-		//P4TargetManager: p4targetMgr,
-		NFInterface:     "eth0",
-		MaxNFSlots:      1,
+		P4TargetManager: p4targetMgr,
+		MaxNFSlots:      maxNFSlots,
 		Log:             ctrl.Log.WithName("nf-manager"),
 	})
 	if err != nil {
@@ -322,11 +339,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// create Metrics and DPCS server here and bind to driverIP
+
 	if err := (&nf.NetworkFunctionReconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		// DplClient: dplClient,
-		NFManager: nfMgr,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		NFManager:       nfMgr,
+		P4TargetManager: p4targetMgr,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "networkfunction")
 		os.Exit(1)
@@ -356,4 +375,22 @@ func main() {
 		setupLog.Error(err, "Failed to run manager")
 		os.Exit(1)
 	}
+}
+
+func discoverIPs(ifaceName string) ([]net.IP, error) {
+	link, err := netlink.LinkByName(ifaceName)
+	if err != nil {
+		return nil, fmt.Errorf("interface %q not found: %w", ifaceName, err)
+	}
+	addrs, err := netlink.AddrList(link, netlink.FAMILY_ALL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list addresses on %q: %w", ifaceName, err)
+	}
+	ips := make([]net.IP, 0, len(addrs))
+	for _, a := range addrs {
+		if a.IP != nil {
+			ips = append(ips, a.IP)
+		}
+	}
+	return ips, nil
 }
