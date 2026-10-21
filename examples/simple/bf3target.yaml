@@ -1,0 +1,14 @@
+apiVersion: infra.loom.io/v1alpha1
+kind: BlueField3Target
+metadata:
+  name: bf3-target
+spec:
+  inInterface: "enp94s0f0np0"
+  outInterface: "enp5es0f0s5"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"

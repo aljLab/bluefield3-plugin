@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
+	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
+	"github.com/mantra6g/bluefield3-plugin/pkg/api"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4client"
-	// p4targetpkg "github.com/mantra6g/bmv2-plugin/internal/managers/p4target"
-	"github.com/mantra6g/bluefield3-plugin/api"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4compile"
 
 	"github.com/go-logr/logr"
@@ -23,8 +23,8 @@ import (
 
 type ManagerConfig struct {
 	Bf3Client       *p4client.Bf3Client
-	// P4TargetManager p4targetpkg.Manager
-	NFInterface     string
+	P4TargetManager p4tmgr.Manager
+	// NFInterface     string
 	Log             logr.Logger
 	MaxNFSlots      int
 }
@@ -49,8 +49,8 @@ type trackedOp struct {
 
 type RealManager struct {
 	bf3Client       *p4client.Bf3Client
-	// p4targetManager p4targetpkg.Manager
-	nfInterface     string
+	p4targetManager p4tmgr.Manager
+	// nfInterface     string
 	maxNFSlots      int
 	log             logr.Logger
 
@@ -66,13 +66,13 @@ func NewManager(cfg ManagerConfig) (Manager, error) {
 	if cfg.Bf3Client == nil {
 		return nil, fmt.Errorf("bf3 client is required")
 	}
-	/* if cfg.P4TargetManager == nil {
+	if cfg.P4TargetManager == nil {
 		return nil, fmt.Errorf("P4Target manager is required")
-	} */
+	}
 	return &RealManager{
 		bf3Client:       cfg.Bf3Client,
-		//p4targetManager: cfg.P4TargetManager,
-		nfInterface:     cfg.NFInterface,
+		p4targetManager: cfg.P4TargetManager,
+		// nfInterface:     cfg.NFInterface,
 		maxNFSlots:      cfg.MaxNFSlots,
 		programs:        make(map[client.ObjectKey]*api.P4Program),
 		ops:             make(map[client.ObjectKey]*trackedOp),
@@ -286,7 +286,8 @@ func (m *RealManager) deploy(ctx context.Context, nf *corev1alpha1.NetworkFuncti
 
 	return m.bf3Client.DeployPipeline(reqCtx, program)
 }
-/* 
+
+/*
 // setupNetworkForwarding is a no-op when no NF interface is configured (e.g. in tests).
 func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, ip netip.Prefix) error {
 	key := client.ObjectKeyFromObject(nf)
@@ -399,6 +400,7 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 
 	return nil
 }
+
 /*
 // teardownNetworkForwarding removes the host route and neighbor entry that were
 // installed by configureTrafficForwardingToNetworkFunctionInterface when the NF was deployed.

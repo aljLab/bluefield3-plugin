@@ -1,0 +1,9 @@
+apiVersion: my.domain/v1alpha1
+kind: BlueField3Target
+metadata:
+  labels:
+    app.kubernetes.io/name: bluefield3-plugin
+    app.kubernetes.io/managed-by: kustomize
+  name: bluefield3target-sample
+spec:
+  # TODO(user): Add fields here

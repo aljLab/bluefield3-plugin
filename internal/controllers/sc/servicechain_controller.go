@@ -47,7 +47,7 @@ type ServiceChainReconciler struct {
 func (r *ServiceChainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = logf.FromContext(ctx)
 
-	// configure proxy process to 
+	// configure proxy process to
 
 	return ctrl.Result{}, nil
 }

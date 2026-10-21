@@ -17,8 +17,12 @@ resources:
   domain: my.domain
   kind: ServiceChain
   version: v1alpha1
-- controller: true
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
   domain: my.domain
   kind: BlueField3Target
+  path: github.com/mantra6g/bluefield3-plugin/api/v1alpha1
   version: v1alpha1
 version: "3"

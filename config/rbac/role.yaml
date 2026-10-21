@@ -7,7 +7,9 @@ rules:
 - apiGroups:
   - my.domain
   resources:
+  - bluefield3targets
   - networkfunctions
+  - servicechains
   verbs:
   - create
   - delete
@@ -19,13 +21,17 @@ rules:
 - apiGroups:
   - my.domain
   resources:
+  - bluefield3targets/finalizers
   - networkfunctions/finalizers
+  - servicechains/finalizers
   verbs:
   - update
 - apiGroups:
   - my.domain
   resources:
+  - bluefield3targets/status
   - networkfunctions/status
+  - servicechains/status
   verbs:
   - get
   - patch

@@ -11,5 +11,5 @@ type DualStackNetwork struct {
 
 type Bluefield3Manager struct {
 	DeviceId string
-	oobIPs DualStackNetwork
+	oobIPs   DualStackNetwork
 }
