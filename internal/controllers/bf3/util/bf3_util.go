@@ -63,8 +63,13 @@ func EnsureBf3PodSpec(target *v1alpha1.BlueField3Target, spec *corev1.PodSpec, c
 // choose node affinity to schedule the driver pod on the host where the BlueField is installed
 func EnsureBf3DriverAffinity(nodeName string) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
+	nodeAffinity := corev1.NodeAffinity{}
+	req := corev1.NodeSelector{}
+	nodeSelectorTerms := GetBf3AffinityNodeSelectorTerms(nodeName)
 
-	affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms = GetBf3AffinityNodeSelectorTerms(nodeName)
+	req.NodeSelectorTerms= nodeSelectorTerms
+	nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = &req
+	affinity.NodeAffinity = &nodeAffinity
 
 	return affinity
 }
