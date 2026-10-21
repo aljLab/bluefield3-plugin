@@ -41,10 +41,13 @@ spec:
             properties:
               inInterface:
                 type: string
+              nodeName:
+                type: string
               outInterface:
                 type: string
             required:
             - inInterface
+            - nodeName
             - outInterface
             type: object
           status:

@@ -40,6 +40,9 @@ type BlueField3TargetSpec struct {
 
 	// +required
 	OutInterface *string `json:"outInterface"`
+
+	// +required
+	NodeName *string `json:"nodeName"`
 }
 
 // BlueField3TargetStatus defines the observed state of BlueField3Target.

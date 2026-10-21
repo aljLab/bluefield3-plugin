@@ -5,6 +5,7 @@ metadata:
 spec:
   inInterface: "enp94s0f0np0"
   outInterface: "enp5es0f0s5"
+  nodeName: "dtn-04"
   resources:
     requests:
       cpu: "500m"
