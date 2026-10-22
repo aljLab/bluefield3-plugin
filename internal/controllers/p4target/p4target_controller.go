@@ -98,6 +98,10 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
+	// TODO: fetch gateway (routing bridge IP) from pod annotations 
+	// + interface names from annotations or bluefield3Target resource.SPec
+	// -> pass to P4target.EnsureNetworkConfiguration
+
 	if err := r.P4TargetManager.EnsureNetworkConfiguration(net_types.TargetNetConfig{
 		NfCIDR: target.Spec.NfCIDR,
 	}); err != nil {
