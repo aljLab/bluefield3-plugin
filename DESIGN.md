@@ -1,20 +1,53 @@
 # Implementation of the BlueField 3 Plugin
+This document provides a detailed overview over the Bluefield3-Plugin, its implementation details and configuration information. I accompanies the thesis document and provides details, which were inappropriate for the thesis itself.
+
+- [Implementation of the BlueField 3 Plugin](#implementation-of-the-bluefield-3-plugin)
+  - [Host Prerequisites](#host-prerequisites)
+    - [DPL Compiler](#dpl-compiler)
+    - [BlueField 3 Installation](#bluefield-3-installation)
+    - [Additional](#additional)
+  - [Controller Implementations](#controller-implementations)
+    - [P4Target](#p4target)
+    - [Bluefield3Target](#bluefield3target)
+    - [NetworkFunction](#networkfunction)
+    - [NetworkFunctionConfig](#networkfunctionconfig)
+  - [SRv6 Proxy Implementation](#srv6-proxy-implementation)
+    - [Known Limitations](#known-limitations)
+  - [Networking](#networking)
+    - [Control Traffic](#control-traffic)
+    - [Service Chain Traffic](#service-chain-traffic)
+    - [Networking Configuration Flow](#networking-configuration-flow)
 
 ## Host Prerequisites
 
-### DPL compiler
+### DPL Compiler
 ### BlueField 3 Installation
 ### Additional
 
 ## Controller Implementations
+![driver-schema](driver-architecture.png)
 ### P4Target
 ### Bluefield3Target
 ### NetworkFunction
 ### NetworkFunctionConfig
 
-## Proxy Implementation
-### Known weaknesses
+## SRv6 Proxy Implementation
+![proxy-schema](proxy-architecture.png)
+The SRv6 Proxy implemented uses kernel routing, while performing the actual proxy tasks (reading, updating, caching of the SRH) in user space. Packets travel from kernel to user space via two TUN devices: `tun0` for decapsulating incoming SRv6 traffic and `tun1` for re-encapsulating traffic from the Bluefield.
+We implement the dynamic proxy behavior $END.AD$ suggested in a [recent internet draft](https://datatracker.ietf.org/doc/draft-ietf-spring-srv6-service-programming/). Incoming packets are read and decapsulated. The SRH is updated (`segmentsLeft--`, `DA=segList[segmentsLeft]`) and stored in a cache. The return traffic is matched to the correct header (that is the correct service chain) based on the incoming interface (Bluefield -> Host). 
+> Using fields from the packet itself can not work, since the network function can modify anything in the packet, or even drop it (e.g. Firewall/NAT).
 
+We only implement the proxy for $n=1$ incoming interfaces, but scaling to more interfaces is possible to distinguish between different service chains at the same time. 
+It is obvious that in the current implementation, encapsulating packets with a wrong header is possible. More on limitations [later](#known-limitations).
+The decapsulation and encapsulation components are implemented as go routines, which share an in-memory cache and own the tun devices.
+We use policy-based routing to ensure that traffic flows through the tun devices and return traffic is forwarded directly to the re-encapsulation component instead of being routed normally. More details on the actual implementation is [here](#service-chain-traffic).
+### Known Limitations
+The current implementation suffers from several limitations, which could not be solved in the time of this thesis, which focuses not on SRv6 proxying, but a hardware driver for IML.
+Firstly, traffic, which is still in transit when a new header is cached will be encapsulated with the new header incorrectly. 
+One could lower the probability of misclassification of return traffic by adding more outgoing and incoming interfaces. Suppose, we had four interfaces `in0`, `in1`, `out0`, `out1` ($n=2) instead of two. The decapsulation component could then cache two different headers, representing two different service chains. Packets belonging to chain A would be emitted on `in0` and packets in service chain B on `in1`. The encapsulation component could then distinguish service chains based on whether they arrive on `out0` or `out1` (e.g. -> use header stored at cache[1]). Note, that for this to work, the P4 program needs to maintain a mapping `INPORT -> OUTPORT`, which aligns with the proxy convention.
+This would also require the decapsulation component to choose an eviction strategy: when two headers are cached and a third one arrives, one header needs to be evicted.
+While this would allow more packets from different service chains in transit at the same time, it would also complicate the implementation and require more time than we had.
+This is also true for implementations using DPDK or FD.io, since IML relies heavily on kernel networking. Moving more parts to user-space using specialized libraries would most likely yield performance gains. This, again, was not the priority here. We aimed at finding a solution simply integrated with IML to showcase the feasibility of this thesis' project.
 ## Networking
 We need to provide reachability for different types of traffic necessary for Loom functionality.
 One kind of traffic is management/control traffic, which includes the gRPC DPCS and HTTP Metrics scraping. These should be reachable under a driver IP assigned by the operator, e.g. at `<driver-ip>:9559` and `<driver-ip>:8080`.
