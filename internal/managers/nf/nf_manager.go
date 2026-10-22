@@ -4,20 +4,22 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
+
 	// "net"
 	"net/netip"
 	"strings"
 	"sync"
 	"time"
 
-	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
 	"github.com/mantra6g/bluefield3-plugin/api"
+	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4client"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4compile"
 
 	"github.com/go-logr/logr"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
-	// "github.com/vishvananda/netlink"
+	"github.com/vishvananda/netlink"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,6 +29,7 @@ type ManagerConfig struct {
 	// NFInterface     string
 	Log             logr.Logger
 	MaxNFSlots      int
+	ProxyTunnel string
 }
 
 type Manager interface {
@@ -53,6 +56,7 @@ type RealManager struct {
 	// nfInterface     string
 	maxNFSlots      int
 	log             logr.Logger
+	ProxyTunnel string
 
 	mu       sync.Mutex
 	programs map[client.ObjectKey]*api.P4Program
@@ -64,7 +68,7 @@ var _ Manager = &RealManager{}
 
 func NewManager(cfg ManagerConfig) (Manager, error) {
 	if cfg.Bf3Client == nil {
-		return nil, fmt.Errorf("bf3 client is required")
+		return nil, fmt.Errorf("BF3 client is required")
 	}
 	if cfg.P4TargetManager == nil {
 		return nil, fmt.Errorf("P4Target manager is required")
@@ -186,13 +190,13 @@ func (m *RealManager) runDeployment(ctx context.Context, h *deploymentHandle, nf
 		return
 	}
 
-	/* logger.V(1).Info("Setting up networking for NF")
+	logger.V(1).Info("Setting up networking for NF")
 	h.transition(PhaseNetworkSetup, "setting up network forwarding", nil)
 	if err := m.setupNetworkForwarding(nf, nfIP); err != nil {
 		logger.V(1).Error(err, "failed to setup network forwarding")
 		h.transition(PhaseFailed, "network setup failed", err)
 		return
-	} */
+	}
 	logger.V(1).Info("Network function setup successfully")
 
 	h.transition(PhaseReady, "network function ready", nil)
@@ -216,11 +220,11 @@ func (m *RealManager) compile(ctx context.Context, nf *corev1alpha1.NetworkFunct
 				program = &api.P4Program{P4DeviceConfig: result.DeviceConfig, ProgramName: nf.Name, P4Info: result.P4Info}
 			}
 		} else {
-			// use dpl client
+			err = fmt.Errorf("Pulling uncompiled P4 Programs is currently not supported. Provide an archive with the compiled artifacts.")
 		}
 	} else {
-		// Treat as base64-encoded pre-compiled BMv2 JSON device config.
-		program, err = api.LoadP4ProgramFromBase64(p4File, nf.Name)
+		// TODO: handle other cases eg. mounted volume with artifacts
+		err = fmt.Errorf("Please provide an accessible URL to an archive with the compiled artifacts.")
 	}
 	if err != nil {
 		return err
@@ -287,48 +291,36 @@ func (m *RealManager) deploy(ctx context.Context, nf *corev1alpha1.NetworkFuncti
 	return m.bf3Client.DeployPipeline(reqCtx, program)
 }
 
-/*
-// setupNetworkForwarding is a no-op when no NF interface is configured (e.g. in tests).
-func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, ip netip.Prefix) error {
+
+func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, nfIP netip.Prefix) error {
 	key := client.ObjectKeyFromObject(nf)
 	program := m.programs[key]
 
-	if m.nfInterface == "" || program == nil || !ip.IsValid() {
+	if program == nil || !nfIP.IsValid() {
 		return fmt.Errorf("invalid parameters for setting up network forwarding")
 	}
-	if err := m.configureTrafficForwardingToNetworkFunctionInterface(ip, m.nfInterface); err != nil {
-		return fmt.Errorf("could not configure traffic forwarding for NF: %w", err)
+	
+	_, ipnet, err := net.ParseCIDR(nfIP.String()); if err != nil {
+		return fmt.Errorf("Parsing assigned NF ip: %s, %w", nfIP.String(), err)
 	}
-	program.IP = ip
+	tun, err := netlink.LinkByName(m.ProxyTunnel); if err != nil {
+		return fmt.Errorf("fetching tunnel interface: %w", err)
+	}
+	
+	// route NF traffic through the SRv6 proxy
+	tunRoute := &netlink.Route{
+		LinkIndex: tun.Attrs().Index,
+		Dst:       ipnet,
+		Family:    netlink.FAMILY_V6,
+	}
+
+	err = netlink.RouteReplace(tunRoute); if err != nil {
+		return fmt.Errorf("creating srv6 proxy route: %w", err)
+	}
+
+	program.IP = nfIP
 	return nil
 }
-
-// configureTrafficForwardingToNetworkFunctionInterface sets up the necessary routes and neighbor entries to ensure
-// that traffic to the NF IP gets forwarded to the NF interface via the bridge. This is needed because the NF interface
-// will have an IP in the same subnet as the bridge, so we need to ensure that traffic to that IP gets forwarded to the
-// correct interface.
-// In order for the return traffic to work correctly, we assume that the NF will reflect the packet back to
-// the MAC address of the bridge interface. When doing so, the source and destination MAC addresses will be swapped,
-// which allows the traffic to be correctly forwarded back to the bridge. For the destination IP, this will
-// either be determined by the NF itself, or it will be the next segment in the SRv6 path; in both cases, this MUST
-// be set by the NF. Afterwards, the packet will be routed by the bridge back to the iml0 interface out of the container
-// and back to the routing VRF in the host.
-func (m *RealManager) configureTrafficForwardingToNetworkFunctionInterface(nfIP netip.Prefix, nfIfaceName string) error {
-	nfInterface, err := netlink.LinkByName(nfIfaceName)
-	if err != nil {
-		return fmt.Errorf("failed to get NF interface: %w", err)
-	}
-	nfAddr := &netlink.Addr{
-		IPNet: &net.IPNet{
-			IP:   nfIP.Addr().Unmap().AsSlice(),
-			Mask: net.CIDRMask(nfIP.Bits(), nfIP.Addr().BitLen()),
-		},
-	}
-	if err := netlink.AddrAdd(nfInterface, nfAddr); err != nil {
-		return fmt.Errorf("failed to add address for NF IP %s: %w", nfIP.String(), err)
-	}
-	return nil
-}*/
 
 func (m *RealManager) runDeletion(ctx context.Context, h *deploymentHandle, nfKey client.ObjectKey) {
 	m.mu.Lock()
@@ -361,7 +353,7 @@ func (m *RealManager) runDeletion(ctx context.Context, h *deploymentHandle, nfKe
 	h.transition(PhaseDeleted, "successfully deleted", nil)
 }
 
-// drain/flush operation is not documented by NVIDIA
+// drain/flush operation is not documented for DOCA Pipeline Language
 func (m *RealManager) drain(_ context.Context, _ client.ObjectKey) error {
 	return nil
 }
@@ -373,7 +365,7 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 	if !ok {
 		return nil // no tracked op for this NF, so nothing to delete
 	}
-	// program, ok := m.programs[nfKey]
+	program, ok := m.programs[nfKey]
 	if !ok {
 		delete(m.ops, nfKey) // no compiled program, so just remove the op tracking
 		return nil           // no compiled program, so nothing was deployed; just remove the op tracking
@@ -387,9 +379,9 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 		return nil
 	}
 
-	/* if err := m.teardownNetworkForwarding(program.IP, m.nfInterface); err != nil {
+	if err := m.teardownNetworkForwarding(program.IP); err != nil {
 		return fmt.Errorf("tearing down network forwarding: %w", err)
-	} */
+	}
 
 	reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -401,37 +393,24 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 	return nil
 }
 
-/*
-// teardownNetworkForwarding removes the host route and neighbor entry that were
-// installed by configureTrafficForwardingToNetworkFunctionInterface when the NF was deployed.
-func (m *RealManager) teardownNetworkForwarding(nfIP netip.Prefix, nfIfaceName string) error {
-	nfInterface, err := netlink.LinkByName(nfIfaceName)
-	if err != nil {
-		return fmt.Errorf("failed to get NF interface: %w", err)
+
+// teardownNetworkForwarding removes the host route -6 <nfIP> dev <ProxyTunnel>
+func (m *RealManager) teardownNetworkForwarding(nfIP netip.Prefix) error {
+	_, ipnet, err := net.ParseCIDR(nfIP.String()); if err != nil {
+		return fmt.Errorf("Parsing assigned NF ip: %s, %w", nfIP.String(), err)
 	}
-	nfAddr := &netlink.Addr{
-		IPNet: &net.IPNet{
-			IP:   nfIP.Addr().Unmap().AsSlice(),
-			Mask: net.CIDRMask(nfIP.Bits(), nfIP.Addr().BitLen()),
-		},
+	tun, err := netlink.LinkByName(m.ProxyTunnel); if err != nil {
+		return fmt.Errorf("fetching tunnel interface: %w", err)
 	}
-	if err := netlink.AddrDel(nfInterface, nfAddr); err != nil {
-		return fmt.Errorf("failed to delete address for NF IP %s: %w", nfIP.String(), err)
+	tunRoute := &netlink.Route{
+		LinkIndex: tun.Attrs().Index,
+		Dst:       ipnet,
+		Family:    netlink.FAMILY_V6,
 	}
-	// nfVeth, ok := nfInterface.(*netlink.Veth)
-	// if !ok {
-	// 	return nil // not a veth interface, so no neighbor entry to delete
-	// }
-	// nfPeer, err := netlink.LinkByName(nfVeth.PeerName)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to get peer interface for NF veth: %w", err)
-	// }
-	// neighbor := &netlink.Neigh{
-	// 	LinkIndex: nfPeer.Attrs().Index,
-	// 	IP:        nfIP.Unmap().AsSlice(),
-	// }
-	// if err := netlink.NeighDel(neighbor); err != nil {
-	// 	return fmt.Errorf("failed to delete neighbor entry for NF IP %s: %w", nfIP.String(), err)
-	// }
+	
+	// delete route created by m.SetUpNetworkForwarding()
+	err = netlink.RouteDel(tunRoute); if err != nil {
+		return fmt.Errorf("creating srv6 proxy route: %w", err)
+	}
 	return nil
-} */
+}

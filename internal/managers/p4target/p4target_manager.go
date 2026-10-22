@@ -11,7 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
-	"github.com/vishvananda/netlink"
+	// "github.com/vishvananda/netlink"
 	"golang.zx2c4.com/wireguard/tun"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -69,7 +69,7 @@ func NewManager(cfg ManagerConfig) (Manager, error) {
 		driverIPs:    cfg.DriverIPs,
 		maxNFSlots:   cfg.MaxNFSlots,
 		p4client:     cfg.P4Client,
-		BridgeName:   cfg.BridgeName,
+		// BridgeName:   cfg.BridgeName,
 		allocatedIPs: make(map[netip.Addr]struct{}),
 		log:          cfg.Log,
 	}, nil
@@ -84,7 +84,7 @@ type RealManager struct {
 	driverIPs  []net.IP
 	maxNFSlots int
 	p4client   p4v1.P4RuntimeClient
-	BridgeName string // created from cni
+	// BridgeName string // created from cni
 	log        logr.Logger
 
 	mu           sync.RWMutex
@@ -119,33 +119,25 @@ func (r *RealManager) EnsureNetworkConfiguration(cfg net_utils.TargetNetConfig) 
 		return nil
 	}
 	
-	// create routes
-	// configure proxy routing
-		// create proxy devices
-		// ip -6 route <SID> dev tun0
-		// ip (-6) rule iif tun0 lookup 200 -> v4/6 200: default via <bogus-ip> dev bf0 (get name from Pod spec)
-		// ip neigh <bogus-ip> lladdr <bf1-mac> nud permanent
-		// ip (-6) rule iif bf1 lookup 201: v4/6 201: default dev tun1
-		// ip -6 route default <gateway-ip> (get from Pod spec) via iml0
-		// ensureProxyRunning(tun0, tun1)
-
-
-	/* alloc, err := ipam.NewAddrAllocator(cidr)
+	
+	
+	alloc, err := ipam.NewAddrAllocator(cidr)
 	if err != nil {
 		return fmt.Errorf("failed to create IP allocator: %w", err)
 	}
 	r.cidr = cidr
 	r.ipAllocator = alloc
 	r.allocatedIPs = make(map[netip.Addr]struct{})
-	if r.BridgeName != "" {
-		bridgeIP, err := alloc.Next()
-		if err != nil {
-			return fmt.Errorf("failed to allocate bridge IP from %s: %w", cidr, err)
-		}
-		if err := r.configureNFBridge(bridgeIP, cidr); err != nil {
-			return fmt.Errorf("failed to configure NF bridge: %w", err)
-		}
-	} */
+	
+	// create routes
+	// configure proxy routing
+		// create proxy devices
+		// ip -6 route <netfunc.AssignedIP> dev tun0 -> maybe configure in
+		// ip (-6) rule iif tun0 lookup 200 -> v4/6 200: default via <bogus-ip> dev bf0 (get name from Pod spec)
+		// ip neigh <bogus-ip> lladdr <bf1-mac> nud permanent
+		// ip (-6) rule iif bf1 lookup 201: v4/6 201: default dev tun1
+		// ip -6 route default <gateway-ip> (get from Pod spec) via iml0
+		// ensureProxyRunning(tun0, tun1)
 	return nil
 }
 
@@ -236,7 +228,7 @@ func (r *RealManager) GetHealthyCondition() corev1alpha1.P4TargetCondition {
 			Type:              ConditionHealthy,
 			Status:            metav1.ConditionFalse,
 			LastHeartbeatTime: now,
-			Reason:            "SwitchUnreachable",
+			Reason:            "TargetUnreachable",
 			Message:           err.Error(),
 		}
 	}
@@ -244,8 +236,8 @@ func (r *RealManager) GetHealthyCondition() corev1alpha1.P4TargetCondition {
 		Type:              ConditionHealthy,
 		Status:            metav1.ConditionTrue,
 		LastHeartbeatTime: now,
-		Reason:            "SwitchReachable",
-		Message:           "The BMv2 switch is reachable",
+		Reason:            "TargetReachable",
+		Message:           "The DPL Service on the BlueField 3 is reachable",
 	}
 }
 
@@ -315,42 +307,6 @@ func (r *RealManager) GetOccupiedCondition() corev1alpha1.P4TargetCondition {
 	}
 }
 
-// configureNFBridge configures the bridge interface with the given IP and subnet mask based
-// on the allocated CIDR for the target. This is needed to ensure that the bridge has an IP
-// in the same subnet as the NF interfaces, and also to ensure that it can act as a kind of
-// gateway for the NFs to forward traffic back to the host.
-func (r *RealManager) configureNFBridge(bridgeIP netip.Addr, nfCIDR netip.Prefix) error {
-	nfBridge, err := netlink.LinkByName(r.BridgeName)
-	if err != nil {
-		return err
-	}
-	// List and remove old addresses, except for link-local and loopback addresses
-	previousAddresses, err := netlink.AddrList(nfBridge, netlink.FAMILY_ALL)
-	if err != nil {
-		return fmt.Errorf("failed to list existing addresses on bridge: %w", err)
-	}
-	for _, addr := range previousAddresses {
-		if addr.IP.IsLinkLocalUnicast() || addr.IP.IsLoopback() || addr.IP.IsLinkLocalMulticast() {
-			continue
-		}
-		if err := netlink.AddrDel(nfBridge, &addr); err != nil {
-			return fmt.Errorf("failed to remove old address %s from bridge: %w", addr.IP.String(), err)
-		}
-	}
-	// Add the new address for the bridge based on the allocated CIDR
-	newBridgeAddr := &netlink.Addr{
-		IPNet: &net.IPNet{
-			IP:   bridgeIP.Unmap().AsSlice(),
-			Mask: net.CIDRMask(nfCIDR.Bits(), bridgeIP.BitLen()),
-		},
-	}
-	err = netlink.AddrAdd(nfBridge, newBridgeAddr)
-	if err != nil {
-		return fmt.Errorf("failed to add new address %s to bridge: %w", newBridgeAddr.IPNet.String(), err)
-	}
-	return nil
-}
-
-func (r *RealManager) ensureProxyRunning(tun0, tun2 tun.Device) {
+func (r *RealManager) ensureSRv6Proxy(tun0, tun2 tun.Device) {
 	// ensure links are up and start decap/encap goroutines (pass logger)
 }

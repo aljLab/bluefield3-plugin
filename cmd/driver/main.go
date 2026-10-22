@@ -45,8 +45,9 @@ import (
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
 	// dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
-	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
 	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
+	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
+	nfcfgmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nfcfg"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4client"
 
 	// +kubebuilder:scaffold:imports
@@ -66,6 +67,7 @@ const (
 	electionIDHigh  = 0
 	electionIDLow   = 1
 	defaultDeviceID = 1000
+	proxyTun = "tun0"
 )
 
 func init() {
@@ -195,22 +197,6 @@ func main() {
 		metricsServerOptions.KeyName = metricsCertKey
 	}
 
-	// discover targetIPs (NetworkConfig.IPNet) from interface iml0 (set up by CNI deployment)
-	targetIPs, err := discoverIPs(dataIface)
-	if err != nil {
-		setupLog.Error(err, "failed to discover target IPs", "iface", dataIface)
-		os.Exit(1)
-	}
-	setupLog.Info(fmt.Sprintf("Discovered target IPs on %s: %v", dataIface, targetIPs))
-
-	// fetch IP assigned by primary CNI via the container interface (veth-peer) connected to the (primary) CNI bridge
-	driverIPs, err := discoverIPs(controlIface)
-	if err != nil {
-		setupLog.Error(err, "failed to discover driver IPs", "iface", controlIface)
-		os.Exit(1)
-	}
-	setupLog.Info(fmt.Sprintf("Discovered driver IPs on %s: %v", controlIface, driverIPs))
-
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
@@ -235,9 +221,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	// discover targetIPs (NetworkConfig.IPNet) from interface iml0 (set up by CNI deployment)
+	targetIPs, err := discoverIPs(dataIface)
+	if err != nil {
+		setupLog.Error(err, "failed to discover target IPs", "iface", dataIface)
+		os.Exit(1)
+	}
+	setupLog.Info(fmt.Sprintf("Discovered target IPs on %s: %v", dataIface, targetIPs))
+
+	// fetch IP assigned by primary CNI via the container interface (veth-peer) connected to the (primary) CNI bridge
+	driverIPs, err := discoverIPs(controlIface)
+	if err != nil {
+		setupLog.Error(err, "failed to discover driver IPs", "iface", controlIface)
+		os.Exit(1)
+	}
+	setupLog.Info(fmt.Sprintf("Discovered driver IPs on %s: %v", controlIface, driverIPs))
+
+
+	// Establish gRPC connection 
+	// Note: The DPL p4 runtime daemon doesn't support Master Arbitration: the first attempt succeeds, successive fail
+	// https://networking-docs.nvidia.com/doca/archive/3-5-0/dpl-release-notes#Unsupported-Features
 	setupLog.Info(fmt.Sprintf("Connecting to P4Runtime client at %s:%s", oobAddr, p4rPort))
-	// Establish gRPC connection and win primary arbitration before creating
-	// managers, so the P4Runtime client can be passed into NewManager.
 	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", oobAddr, p4rPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		setupLog.Error(err, "failed to create gRPC client")
@@ -249,77 +253,21 @@ func main() {
 		}
 	}()
 	c := p4v1.NewP4RuntimeClient(conn)
-
-	// https://networking-docs.nvidia.com/doca/archive/3-5-0/dpl-release-notes#Unsupported-Features
-	// The DPL p4 runtime daemon doesnt support Master Arbitration: the first attempt succeeds, successive fail
-	/* const maxRetries = 30
-	const retryInterval = 2 * time.Second
-	var connected bool
-	for i := 0; i < maxRetries; i++ {
-		stream, err := c.StreamChannel(context.Background())
-		if err != nil {
-			setupLog.Info(fmt.Sprintf("Switch not ready (attempt %d/%d): %v — retrying in %s",
-				i+1, maxRetries, err, retryInterval))
-			time.Sleep(retryInterval)
-			continue
-		}
-		if err = stream.Send(&p4v1.StreamMessageRequest{
-			Update: &p4v1.StreamMessageRequest_Arbitration{
-				Arbitration: &p4v1.MasterArbitrationUpdate{
-					DeviceId:   1000,
-					ElectionId: &p4v1.Uint128{High: electionIDHigh, Low: electionIDLow},
-				},
-			},
-		}); err != nil {
-			setupLog.Info(fmt.Sprintf("Switch not ready (attempt %d/%d): %v — retrying in %s",
-				i+1, maxRetries, err, retryInterval))
-			time.Sleep(retryInterval)
-			continue
-		}
-		resp, err := stream.Recv()
-		if err != nil {
-			setupLog.Info(fmt.Sprintf("Bluefield not ready (attempt %d/%d): %v — retrying in %s",
-				i+1, maxRetries, err, retryInterval))
-			time.Sleep(retryInterval)
-			continue
-		}
-		if resp.GetArbitration() == nil {
-			setupLog.Info(fmt.Sprintf("Bluefield not ready (attempt %d/%d): unexpected response — retrying in %s",
-				i+1, maxRetries, retryInterval))
-			time.Sleep(retryInterval)
-			continue
-		}
-		go func() {
-			for {
-				if _, err := stream.Recv(); err != nil {
-					setupLog.Error(err, "stream channel closed unexpectedly")
-					return
-				}
-			}
-		}()
-		connected = true
-		break
-	}
-	if !connected {
-		setupLog.Error(
-			fmt.Errorf("could not connect to BlueField3 at %s after %d attempts", oobAddr, maxRetries),
-			"failed to connect to BlueField3",
-		)
-		os.Exit(1)
-	}*/
 	setupLog.Info(fmt.Sprintf("Connected to BlueField3 at %s:%s", oobAddr, p4rPort))
 
-	// create Bf3Client to pass to NF-Manager
+	// create Bf3Client to pass to managers
 	bf3Client := p4client.NewBf3Client(c, defaultDeviceID, electionIDHigh, electionIDLow)
 
-
+	/*
+	MANAGERS: P4Target, NetworkFunction, NetworkFunctionConfig
+	*/
 	p4targetMgr, err := p4tmgr.NewManager(p4tmgr.ManagerConfig{
 		Name:       targetName,
 		P4Client:   c,
 		MaxNFSlots: maxNFSlots,
 		TargetIPs:  targetIPs,
 		DriverIPs:  driverIPs,
-		BridgeName: "br0",
+		// BridgeName: "br0",
 		Log:        ctrl.Log.WithName("p4target-manager"),
 	})
 	if err != nil {
@@ -332,6 +280,7 @@ func main() {
 		Bf3Client:       bf3Client,
 		P4TargetManager: p4targetMgr,
 		MaxNFSlots:      maxNFSlots,
+		ProxyTunnel:     proxyTun,
 		Log:             ctrl.Log.WithName("nf-manager"),
 	})
 	if err != nil {
@@ -339,26 +288,33 @@ func main() {
 		os.Exit(1)
 	}
 
+	nfcfgMgr, err := nfcfgmgr.NewManager(nfcfgmgr.ManagerConfig{
+		Bf3Client: bf3Client,
+		Log:    ctrl.Log.WithName("nfcfg-manager"),
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to create nfcfg manager")
+		os.Exit(1)
+	}
+
 	// create Metrics and DPCS server here and bind to driverIP
 
-	if err := (&nf.NetworkFunctionReconciler{
+	/*
+	RECONCILERS: P4Target, NetworkFunction, Lease (Node Heartbeat)
+	*/
+
+	if err := (&nf.Reconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		NFManager:       nfMgr,
+		NFConfigManager: nfcfgMgr,
 		P4TargetManager: p4targetMgr,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "networkfunction")
 		os.Exit(1)
 	}
 	setupLog.Info("Registered NF Reconciler.")
-	/*if err := (&sc.ServiceChainReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Failed to create controller", "controller", "servicechain")
-		os.Exit(1)
-	}
-	setupLog.Info("Registered SC Reconciler.")*/
+
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
