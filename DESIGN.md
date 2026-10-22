@@ -38,7 +38,7 @@ Traffic will flow like this:
 ### Networking Configuration Flow
 When the driver pod is created, Multus sends ADD requests to the primary (e.g. flannel) and secondary (IML) CNI.
 The primary CNI assigns a pod IP in the node's PodCIDR (e.g. 10.244.0.0/24 for flannel). The IML CNI does additional configuration, that is performing actions which require configuration of the host net namespace.
-The IML CNI could be extended to react to a new AppType (e.g. `HardwareDriver`) taking arguments such as `MoveInterfaces` (specifying interfaces (to expose VFs (SR-IOV) or SFs directly to the pod) to be moved into the pod namespace).
+The IML CNI could be extended to react to a new AppType (e.g. `HostAttachedTarget`) taking arguments such as `MoveInterfaces` (specifying interfaces (to expose VFs (SR-IOV) or SFs directly to the pod) to be moved into the pod namespace).
 The CNI would take care of necessary host net ns configurations and allocation and assignment of IP addresses, including:
 - fetching P4Target `NetConfig` object from the CNI server (IML daemon)
   > The `NetConfig` object contains information on: the dual stack IPs to assign to `iml0`, the IPv6 cluster CIDR, the dual stack Gateway IPs (the IPs of the routing bridge), the name of the routing bridge, the name of the veth-peer connected to `iml0`, and the supported MTU.
