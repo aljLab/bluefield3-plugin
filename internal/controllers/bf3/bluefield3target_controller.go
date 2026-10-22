@@ -18,6 +18,7 @@ package bf3
 
 import (
 	"context"
+	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,10 +75,6 @@ func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	
-	logger.V(1).Info("Checking Args", "NodeName", *bf3Target.Spec.NodeName)
-	logger.V(1).Info("Checking Args", "inIface", *bf3Target.Spec.InInterface)
-	logger.V(1).Info("Checking Args", "outIface", *bf3Target.Spec.OutInterface)
-	
 	// deploy driver pod
 	_, err = r.ensureDeployment(ctx, bf3Target)
 	if err != nil {
@@ -104,7 +101,7 @@ func (r *BlueField3TargetReconciler) ensureDeployment(ctx context.Context,
 	target *v1alpha1.BlueField3Target) (*appsv1.Deployment, error) {
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      target.Name,
+			Name:      fmt.Sprintf("%s-driver", target.Name),
 			Namespace: r.Config.PodNamespace,
 		},
 	}
