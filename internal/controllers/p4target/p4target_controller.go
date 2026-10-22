@@ -21,15 +21,15 @@ import (
 	"os"
 	"time"
 
-	/* "github.com/mantra6g/bmv2-plugin/internal/controllers/lease"
-	"github.com/mantra6g/bmv2-plugin/internal/controllers/p4target/utils"
-	*/
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/lease"
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/p4target/utils"
+
 	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
 	net_types "github.com/mantra6g/bluefield3-plugin/networking"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 
 	"github.com/go-logr/logr"
-	// v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -82,15 +82,15 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		panic("POD_NAME or POD_NAMESPACE environment variable is not set")
 	}
 
-	/* targetPod := &v1.Pod{}
+	targetPod := &v1.Pod{}
 	if err := r.Get(ctx, types.NamespacedName{Name: podName, Namespace: podNamespace}, targetPod); err != nil {
 		if errors.IsNotFound(err) {
 			logger.V(1).Info("P4Target Pod not found. Requeueing after 10 seconds.")
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 		}
-		logger.Error(err, "Failed to get P4Target Pod")
+		logger.Error(err, "Failed to get the Driver Pod associated with this P4Target")
 		return ctrl.Result{}, err
-		} */
+	}
 		
 	// NfCIDR is allocated by the primary p4target reconciler in the IML manager
 	if len(target.Spec.NfCIDR) == 0 {
@@ -105,7 +105,7 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, nil //r.updateP4TargetStatus(ctx, target, targetPod)
+	return ctrl.Result{}, r.updateP4TargetStatus(ctx, target, targetPod)
 }
 
 func (r *Reconciler) createP4Target(ctx context.Context) error {
@@ -121,41 +121,41 @@ func (r *Reconciler) createP4Target(ctx context.Context) error {
 	return r.Create(ctx, target)
 }
 
-/*
-	 func (r *Reconciler) updateP4TargetStatus(ctx context.Context, target *corev1alpha1.P4Target, targetPod *v1.Pod) error {
-		original := target.DeepCopy()
-		target.Status = r.calculateP4TargetStatus(targetPod)
-		if utils.StatusChanged(original, target) {
-			return r.Status().Patch(ctx, target, client.MergeFrom(original))
-		}
-		return nil
+
+func (r *Reconciler) updateP4TargetStatus(ctx context.Context, target *corev1alpha1.P4Target, targetPod *v1.Pod) error {
+	original := target.DeepCopy()
+	target.Status = r.calculateP4TargetStatus(targetPod)
+	if utils.StatusChanged(original, target) {
+		return r.Status().Patch(ctx, target, client.MergeFrom(original))
 	}
+	return nil
+}
 
-	func (r *Reconciler) calculateP4TargetStatus(targetPod *v1.Pod) corev1alpha1.P4TargetStatus {
-		targetStatus := corev1alpha1.P4TargetStatus{}
-		targetStatus.NodeName = targetPod.Spec.NodeName
-		targetStatus.Capacity = r.P4TargetManager.GetCapacity()
-		targetStatus.Allocatable = r.P4TargetManager.GetAllocatable()
+func (r *Reconciler) calculateP4TargetStatus(targetPod *v1.Pod) corev1alpha1.P4TargetStatus {
+	targetStatus := corev1alpha1.P4TargetStatus{}
+	targetStatus.NodeName = targetPod.Spec.NodeName
+	targetStatus.Capacity = r.P4TargetManager.GetCapacity()
+	targetStatus.Allocatable = r.P4TargetManager.GetAllocatable()
 
-		targetStatus.TargetIPs = utils.FilterIPs(r.P4TargetManager.GetTargetIPs())
-		targetStatus.DriverIPs = utils.FilterIPs(r.P4TargetManager.GetDriverIPs())
+	targetStatus.TargetIPs = utils.FilterIPs(r.P4TargetManager.GetTargetIPs())
+	targetStatus.DriverIPs = utils.FilterIPs(r.P4TargetManager.GetDriverIPs())
 
-		occupiedCondition := r.P4TargetManager.GetOccupiedCondition()
-		healthyCondition := r.P4TargetManager.GetHealthyCondition()
-		netconfCondition := r.P4TargetManager.GetNetworkConfiguredCondition()
-		readyCondition := r.P4TargetManager.GetReadyCondition(healthyCondition, netconfCondition)
+	occupiedCondition := r.P4TargetManager.GetOccupiedCondition()
+	healthyCondition := r.P4TargetManager.GetHealthyCondition()
+	netconfCondition := r.P4TargetManager.GetNetworkConfiguredCondition()
+	readyCondition := r.P4TargetManager.GetReadyCondition(healthyCondition, netconfCondition)
 
-		targetStatus.Conditions = []corev1alpha1.P4TargetCondition{}
-		targetStatus.Conditions = append(targetStatus.Conditions, readyCondition)
-		targetStatus.Conditions = append(targetStatus.Conditions, healthyCondition)
-		targetStatus.Conditions = append(targetStatus.Conditions, netconfCondition)
-		targetStatus.Conditions = append(targetStatus.Conditions, occupiedCondition)
-		return targetStatus
-	}
-*/
+	targetStatus.Conditions = []corev1alpha1.P4TargetCondition{}
+	targetStatus.Conditions = append(targetStatus.Conditions, readyCondition)
+	targetStatus.Conditions = append(targetStatus.Conditions, healthyCondition)
+	targetStatus.Conditions = append(targetStatus.Conditions, netconfCondition)
+	targetStatus.Conditions = append(targetStatus.Conditions, occupiedCondition)
+	return targetStatus
+}
+
 func (r *Reconciler) Start(ctx context.Context) error {
 	r.Log.V(1).Info("Starting P4Target controller")
-	backoff := 1 * time.Second // lease.InitialBackoff
+	backoff := lease.InitialBackoff
 	timer := time.NewTimer(0)  // run immediately
 	defer timer.Stop()
 	for {
@@ -169,13 +169,13 @@ func (r *Reconciler) Start(ctx context.Context) error {
 				timer.Reset(backoff)
 
 				backoff *= 2
-				if backoff > 16*time.Second { //lease.MaxBackoff {
-					backoff = 16 * time.Second // lease.MaxBackoff
+				if backoff > lease.MaxBackoff {
+					backoff = lease.MaxBackoff
 				}
 				continue
 			}
 			// success -> reset backoff
-			backoff = 1 * time.Second //lease.InitialBackoff
+			backoff = lease.InitialBackoff
 
 			// decide next schedule
 			next := r.PullInterval

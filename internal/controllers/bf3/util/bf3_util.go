@@ -106,7 +106,7 @@ func EnsureBf3DriverContainer(target *v1alpha1.BlueField3Target, conf *Bf3Driver
 		"--target-name", target.Name,
 		"--max-nf-slots", "1",
 	}
-	// container.Env = EnsureDriverEnvVars(bmv2Target, container.Env) skip for now
+	container.Env = EnsureDriverEnvVars(target, container.Env)
 	return container
 }
 
@@ -150,7 +150,7 @@ func NewCNIConfigForTarget(target *v1alpha1.BlueField3Target) CNIConfig {
 		Name:      "loom-cni",
 		Namespace: "loom-system",
 		CNIArgs: CNIArgs{
-			AppType:      "HardwareDriver", // get a NetConfig Object back to configure the network
+			AppType:      "HostAttachedTarget", // get a NetConfig Object back to configure the network
 			TargetName:   target.Name,
 			MoveInterfaces: []string{
 				*target.Spec.InInterface,
@@ -158,4 +158,71 @@ func NewCNIConfigForTarget(target *v1alpha1.BlueField3Target) CNIConfig {
 			},
 		},
 	}
+}
+
+func EnsureDriverEnvVars(bmv2Target *v1alpha1.BlueField3Target, existing []corev1.EnvVar) []corev1.EnvVar {
+	if existing == nil {
+		existing = []corev1.EnvVar{}
+	}
+	newEnvVars := make([]corev1.EnvVar, len(existing))
+	copy(newEnvVars, existing)
+	newEnvVars = EnsurePodNameEnvVar(newEnvVars)
+	newEnvVars = EnsurePodNamespaceEnvVar(newEnvVars)
+	return newEnvVars
+}
+
+func EnsurePodNameEnvVar(existing []corev1.EnvVar) []corev1.EnvVar {
+	var foundEnvVar *corev1.EnvVar
+	for i := range existing {
+		if existing[i].Name == "POD_NAME" {
+			foundEnvVar = &existing[i]
+		}
+	}
+	if foundEnvVar == nil {
+		return append(existing, corev1.EnvVar{
+			Name: "POD_NAME",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "metadata.name",
+				},
+			},
+		})
+	}
+	foundEnvVar.Value = ""
+	if foundEnvVar.ValueFrom == nil {
+		foundEnvVar.ValueFrom = &corev1.EnvVarSource{}
+	}
+	if foundEnvVar.ValueFrom.FieldRef == nil {
+		foundEnvVar.ValueFrom.FieldRef = &corev1.ObjectFieldSelector{}
+	}
+	foundEnvVar.ValueFrom.FieldRef.FieldPath = "metadata.name"
+	return existing
+}
+
+func EnsurePodNamespaceEnvVar(existing []corev1.EnvVar) []corev1.EnvVar {
+	var foundEnvVar *corev1.EnvVar
+	for i := range existing {
+		if existing[i].Name == "POD_NAMESPACE" {
+			foundEnvVar = &existing[i]
+		}
+	}
+	if foundEnvVar == nil {
+		return append(existing, corev1.EnvVar{
+			Name: "POD_NAMESPACE",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "metadata.namespace",
+				},
+			},
+		})
+	}
+	foundEnvVar.Value = ""
+	if foundEnvVar.ValueFrom == nil {
+		foundEnvVar.ValueFrom = &corev1.EnvVarSource{}
+	}
+	if foundEnvVar.ValueFrom.FieldRef == nil {
+		foundEnvVar.ValueFrom.FieldRef = &corev1.ObjectFieldSelector{}
+	}
+	foundEnvVar.ValueFrom.FieldRef.FieldPath = "metadata.namespace"
+	return existing
 }
