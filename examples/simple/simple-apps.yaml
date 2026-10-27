@@ -26,7 +26,8 @@ spec:
       annotations:
         k8s.v1.cni.cncf.io/networks: |
           [{
-            "name": "iml-cni",
+            "name": "loom-cni",
+            "namespace": "loom-system",
             "cni-args": {
               "app_type":      "application",
               "app_name":      "web-client",
@@ -55,7 +56,8 @@ spec:
       annotations:
         k8s.v1.cni.cncf.io/networks: |
           [{
-            "name": "iml-cni",
+            "name": "loom-cni",
+            "namespace": "loom-system",
             "cni-args": {
               "app_type":      "application",
               "app_name":      "web-server",

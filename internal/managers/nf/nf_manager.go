@@ -200,7 +200,6 @@ func (m *RealManager) runDeployment(ctx context.Context, h *deploymentHandle, nf
 	logger.V(1).Info("Network function setup successfully")
 
 	h.transition(PhaseReady, "network function ready", nil)
-	logger.V(1).Info("Transitioned to", "Phase", h.status.Phase, "Message", h.status.Message)
 }
 
 // compile fetches the P4 source (URL or base64-encoded BMv2 JSON) and produces
