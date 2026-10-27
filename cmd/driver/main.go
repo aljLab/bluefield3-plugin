@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net"
 	"os"
-	// "time"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -45,6 +45,8 @@ import (
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
 	// dplclient "github.com/mantra6g/bluefield3-plugin/client"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/p4target"
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/lease"
 	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
 	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
 	nfcfgmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nfcfg"
@@ -67,7 +69,9 @@ const (
 	electionIDHigh  = 0
 	electionIDLow   = 1
 	defaultDeviceID = 1000
-	proxyTun = "tun0"
+	DefaultLeaseRenewIntervalSeconds   = 5
+	DefaultLeaseDurationSeconds        = 40
+	DefaultStatusUpdateIntervalSeconds = 10
 )
 
 func init() {
@@ -221,13 +225,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// discover targetIPs (NetworkConfig.IPNet) from interface iml0 (set up by CNI deployment)
-	targetIPs, err := discoverIPs(dataIface)
+	// discover targetIPs (NetworkConfig.IPNet) from interface iml0 (set up by CNI deployment -> is skipped here)
+	/*targetIPs, err := discoverIPs(dataIface)
 	if err != nil {
 		setupLog.Error(err, "failed to discover target IPs", "iface", dataIface)
 		os.Exit(1)
 	}
-	setupLog.Info(fmt.Sprintf("Discovered target IPs on %s: %v", dataIface, targetIPs))
+	setupLog.Info(fmt.Sprintf("Discovered target IPs on %s: %v", dataIface, targetIPs))*/
 
 	// fetch IP assigned by primary CNI via the container interface (veth-peer) connected to the (primary) CNI bridge
 	driverIPs, err := discoverIPs(controlIface)
@@ -265,7 +269,7 @@ func main() {
 		Name:       targetName,
 		P4Client:   c,
 		MaxNFSlots: maxNFSlots,
-		TargetIPs:  targetIPs,
+		// TargetIPs:  targetIPs,
 		DriverIPs:  driverIPs,
 		Log:        ctrl.Log.WithName("p4target-manager"),
 	})
@@ -279,7 +283,6 @@ func main() {
 		Bf3Client:       bf3Client,
 		P4TargetManager: p4targetMgr,
 		MaxNFSlots:      maxNFSlots,
-		ProxyTunnel:     proxyTun,
 		Log:             ctrl.Log.WithName("nf-manager"),
 	})
 	if err != nil {
@@ -313,6 +316,31 @@ func main() {
 		os.Exit(1)
 	}
 	setupLog.Info("Registered NF Reconciler.")
+
+	statusUpdater := &p4target.Reconciler{
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		P4TargetManager: p4targetMgr,
+		PullInterval:    time.Duration(DefaultStatusUpdateIntervalSeconds) * time.Second,
+		Log:             ctrl.Log.WithName("p4target-status-updater"),
+	}
+	if err = mgr.Add(statusUpdater); err != nil {
+		setupLog.Error(err, "unable to add status updater as dependency of manager")
+		os.Exit(1)
+	}
+
+	renewer := &lease.Renewer{
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		RenewInterval:   time.Duration(DefaultLeaseRenewIntervalSeconds) * time.Second,
+		LeaseDuration:   time.Duration(DefaultLeaseDurationSeconds) * time.Second,
+		P4TargetManager: p4targetMgr,
+		Log:             ctrl.Log.WithName("lease-renewer"),
+	}
+	if err = mgr.Add(renewer); err != nil {
+		setupLog.Error(err, "unable to add renewer as dependency of manager")
+		os.Exit(1)
+	}
 
 	// +kubebuilder:scaffold:builder
 

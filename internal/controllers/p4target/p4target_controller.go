@@ -109,6 +109,9 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 	if len(target.Spec.TargetDataplaneIPs) == 0 {
 		logger.V(1).Info("P4Target does not have any TargetDataplaneIPs. Requeueing after 10 seconds.")
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	} else {
+		// r.P4TargetManager.SetTargetIPs(target.Spec.TargetDataplaneIPs)
+		logger.V(1).Info("Setting configured target dataplane IPs on P4target resource")
 	}
 
 	if err := r.P4TargetManager.EnsureNetworkConfiguration(net_types.TargetNetConfig{
@@ -184,7 +187,7 @@ func (r *Reconciler) calculateP4TargetStatus(bf3target *v1alpha1.BlueField3Targe
 	targetStatus.Capacity = r.P4TargetManager.GetCapacity()
 	targetStatus.Allocatable = r.P4TargetManager.GetAllocatable()
 	targetStatus.NodeName = *bf3target.Spec.NodeName
-	// targetStatus.TargetIPs = utils.FilterIPs(r.P4TargetManager.GetTargetIPs())
+	// targetStatus.TargetIPs = utils.FilterIPs(r.P4TargetManager.GetTargetIPs()) -> maybe get here from Spec
 	targetStatus.DriverIPs = utils.FilterIPs(r.P4TargetManager.GetDriverIPs())
 
 	occupiedCondition := r.P4TargetManager.GetOccupiedCondition()

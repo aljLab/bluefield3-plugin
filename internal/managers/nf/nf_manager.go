@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net"
+	// "net"
 
 	// "net"
 	"net/netip"
@@ -19,7 +19,7 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
-	"github.com/vishvananda/netlink"
+	// "github.com/vishvananda/netlink"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -29,7 +29,7 @@ type ManagerConfig struct {
 	// NFInterface     string
 	Log             logr.Logger
 	MaxNFSlots      int
-	ProxyTunnel string
+	// ProxyTunnel string
 }
 
 type Manager interface {
@@ -293,7 +293,7 @@ func (m *RealManager) deploy(ctx context.Context, nf *corev1alpha1.NetworkFuncti
 
 
 func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, nfIP netip.Prefix) error {
-	key := client.ObjectKeyFromObject(nf)
+	/* key := client.ObjectKeyFromObject(nf)
 	program := m.programs[key]
 
 	if program == nil || !nfIP.IsValid() {
@@ -318,7 +318,7 @@ func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, n
 		return fmt.Errorf("creating srv6 proxy route: %w", err)
 	}
 
-	program.IP = nfIP
+	program.IP = nfIP */
 	return nil
 }
 
@@ -396,7 +396,7 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 
 // teardownNetworkForwarding removes the host route -6 <nfIP> dev <ProxyTunnel>
 func (m *RealManager) teardownNetworkForwarding(nfIP netip.Prefix) error {
-	_, ipnet, err := net.ParseCIDR(nfIP.String()); if err != nil {
+	/* _, ipnet, err := net.ParseCIDR(nfIP.String()); if err != nil {
 		return fmt.Errorf("Parsing assigned NF ip: %s, %w", nfIP.String(), err)
 	}
 	tun, err := netlink.LinkByName(m.ProxyTunnel); if err != nil {
@@ -411,6 +411,6 @@ func (m *RealManager) teardownNetworkForwarding(nfIP netip.Prefix) error {
 	// delete route created by m.SetUpNetworkForwarding()
 	err = netlink.RouteDel(tunRoute); if err != nil {
 		return fmt.Errorf("creating srv6 proxy route: %w", err)
-	}
+    }*/
 	return nil
 }

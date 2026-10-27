@@ -100,9 +100,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	nfIP := netip.PrefixFrom(funcIP, r.P4TargetManager.GetNfCIDR().Bits())
 
 	nfHandle := r.NFManager.EnsurePresent(ctx, netfunc, nfIP)
-	_ = nfHandle.Status()
+	status := nfHandle.Status()
 	// update status
-	// err = r.updateStatus(netfunc, status, nfIP)
+	err = r.updateStatus(netfunc, status, nfIP)
 	return ctrl.Result{}, nil
 }
 

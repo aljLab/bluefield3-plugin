@@ -32,7 +32,7 @@ type Condition struct {
 
 type ManagerConfig struct {
 	Name       string
-	TargetIPs  []net.IP
+	// TargetIPs  []net.IP
 	DriverIPs  []net.IP
 	MaxNFSlots int
 	P4Client   p4v1.P4RuntimeClient
@@ -68,7 +68,7 @@ func NewManager(cfg ManagerConfig) (Manager, error) {
 	}
 	return &RealManager{
 		name:         cfg.Name,
-		targetIPs:    cfg.TargetIPs,
+		// targetIPs:    cfg.TargetIPs, -> maybe update later when targetDataplaneIPs is set by daemon
 		driverIPs:    cfg.DriverIPs,
 		maxNFSlots:   cfg.MaxNFSlots,
 		p4client:     cfg.P4Client,
