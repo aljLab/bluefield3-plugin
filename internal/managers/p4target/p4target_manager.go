@@ -11,8 +11,8 @@ import (
 	"github.com/go-logr/logr"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
-	"github.com/vishvananda/netlink"
-	"golang.org/x/sys/unix"
+	/* "github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix" */
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,8 +20,8 @@ import (
 	net_utils "github.com/mantra6g/bluefield3-plugin/networking"
 	// "github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
 	"github.com/mantra6g/bluefield3-plugin/pkg/ipam"
-	"github.com/mantra6g/bluefield3-plugin/pkg/proxy"
-	"github.com/mantra6g/bluefield3-plugin/pkg/proxy/utils"
+	/* "github.com/mantra6g/bluefield3-plugin/pkg/proxy"
+	"github.com/mantra6g/bluefield3-plugin/pkg/proxy/utils" */
 )
 
 type Condition struct {
@@ -131,7 +131,7 @@ func (r *RealManager) EnsureNetworkConfiguration(cfg net_utils.TargetNetConfig) 
 	r.ipAllocator = alloc
 	r.allocatedIPs = make(map[netip.Addr]struct{})
 	
-	// TODO: get actual MTU
+	/* // TODO: get actual MTU
 	MTU := 1294
 	table1 := 200
 	prio1 := 200
@@ -272,7 +272,7 @@ func (r *RealManager) EnsureNetworkConfiguration(cfg net_utils.TargetNetConfig) 
 		return fmt.Errorf("Couldn't start proxy background workers: %w", err)
 	}
 
-	r.proxyCancel = proxyCancel
+	r.proxyCancel = proxyCancel */
 	return nil
 }
 
@@ -442,7 +442,7 @@ func (r *RealManager) GetOccupiedCondition() corev1alpha1.P4TargetCondition {
 	}
 }
 
-func (r *RealManager) ensureProxyRunning(ctx context.Context, w1, w2 *proxy.SRv6ProxyWorker) (context.CancelFunc, error) {
+/* func (r *RealManager) ensureProxyRunning(ctx context.Context, w1, w2 *proxy.SRv6ProxyWorker) (context.CancelFunc, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	go w1.DecapTraffic(ctx, r.log)
@@ -451,3 +451,4 @@ func (r *RealManager) ensureProxyRunning(ctx context.Context, w1, w2 *proxy.SRv6
 
 	return cancel, nil
 }
+ */
