@@ -20,23 +20,24 @@ import (
 	"context"
 	"fmt"
 	"net/netip"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	
-	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
 	nfcfgmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nfcfg"
 	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
+	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // NetworkFunctionReconciler reconciles a NetworkFunction object
@@ -101,6 +102,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	nfHandle := r.NFManager.EnsurePresent(ctx, netfunc, nfIP)
 	status := nfHandle.Status()
+	if status.Phase == "Pending" {
+		err = r.updateStatus(netfunc, status, nfIP)
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+	}
 	// update status
 	err = r.updateStatus(netfunc, status, nfIP)
 	return ctrl.Result{}, nil
