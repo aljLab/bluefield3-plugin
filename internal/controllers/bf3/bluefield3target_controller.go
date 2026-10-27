@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
-	bf3util "github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
 	"github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -132,10 +131,10 @@ func (r *BlueField3TargetReconciler) ensureDeployment(ctx context.Context,
 	}
 
 	_, err := controllerutil.CreateOrPatch(ctx, r.Client, dep, func() error {
-		dep.Labels = bf3util.EnsureBf3DeploymentLabels(target, dep.Labels)
-		dep.Annotations = bf3util.EnsureBf3DeploymentAnnotations(target, dep.Annotations)
-		dep.Finalizers = bf3util.EnsureBf3DeploymentFinalizers(target, dep.Finalizers)
-		dep.Spec = *bf3util.EnsureBf3DeploymentSpec(target, &dep.Spec, r.Config)
+		dep.Labels = util.EnsureBf3DeploymentLabels(target, dep.Labels)
+		dep.Annotations = util.EnsureBf3DeploymentAnnotations(target, dep.Annotations)
+		dep.Finalizers = util.EnsureBf3DeploymentFinalizers(target, dep.Finalizers)
+		dep.Spec = *util.EnsureBf3DeploymentSpec(target, &dep.Spec, r.Config)
 		return controllerutil.SetControllerReference(target, dep, r.Scheme) // BlueField3Target owns Deployment
 	})
 	return dep, err
@@ -149,7 +148,7 @@ func (r *BlueField3TargetReconciler) createP4Target(ctx context.Context, bf3targ
 				corev1alpha1.P4TargetArchitectureLabel: "doca-bf3",
 			},
 		},
-		Spec: *bf3util.EnsureP4TargetSpec(bf3target),
+		Spec: *util.EnsureP4TargetSpec(bf3target),
 	}
 	return r.Create(ctx, target)
 }

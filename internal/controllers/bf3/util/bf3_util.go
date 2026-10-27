@@ -13,6 +13,7 @@ type Bf3DriverConfig struct {
 	ContainerName string
 	DriverImage   string
 	PodNamespace  string
+	DriverServiceAccount string
 }
 
 /*
@@ -86,7 +87,8 @@ func EnsureBf3PodSpec(target *v1alpha1.BlueField3Target, spec *corev1.PodSpec, c
 	if spec == nil {
 		spec = &corev1.PodSpec{}
 	}
-	// spec.ServiceAccountName = ?
+	spec.ServiceAccountName = conf.DriverServiceAccount
+
 	// ensure that the driver is deployed on the Bluefield Host
 	spec.Affinity = EnsureBf3DriverAffinity(*target.Spec.NodeName)
 	spec.Containers = []corev1.Container{EnsureBf3DriverContainer(target, conf)}

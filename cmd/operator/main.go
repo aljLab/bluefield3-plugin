@@ -72,6 +72,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
+	var driverServiceAccount string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -91,6 +92,8 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.StringVar(&driverServiceAccount, "driver-service-account", "loom-bf3-driver-account",
+		"The name of the BF3 driver service account (default 'loom-bf3-driver-account')")
 
 	opts := zap.Options{
 		Development: true,
@@ -196,6 +199,7 @@ func main() {
 		ContainerName: "bluefield3-driver",
 		DriverImage:   "bluefield3-driver:local",
 		PodNamespace:  "loom-system",
+		DriverServiceAccount: driverServiceAccount,
 	}
 
 	if err := (&bf3.BlueField3TargetReconciler{
