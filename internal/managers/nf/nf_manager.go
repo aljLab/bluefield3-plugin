@@ -200,6 +200,7 @@ func (m *RealManager) runDeployment(ctx context.Context, h *deploymentHandle, nf
 	logger.V(1).Info("Network function setup successfully")
 
 	h.transition(PhaseReady, "network function ready", nil)
+	logger.V(1).Info("Transitioned to", "Phase", h.status.Phase, "Message", h.status.Message)
 }
 
 // compile fetches the P4 source (URL or base64-encoded BMv2 JSON) and produces
@@ -290,7 +291,6 @@ func (m *RealManager) deploy(ctx context.Context, nf *corev1alpha1.NetworkFuncti
 
 	return m.bf3Client.DeployPipeline(reqCtx, program)
 }
-
 
 func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, nfIP netip.Prefix) error {
 	/* key := client.ObjectKeyFromObject(nf)
