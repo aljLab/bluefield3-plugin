@@ -88,7 +88,7 @@ func (r *Renewer) updateLease(ctx context.Context, lease *coordv1.Lease, now met
 
 func (r *Renewer) Reconcile(ctx context.Context) (Result, error) {
 	logger := r.Log
-	logger.V(1).Info("Reconciling BMv2 Lease")
+	logger.V(1).Info("Reconciling Bluefield3 Lease")
 	now := metav1.MicroTime{Time: time.Now()}
 
 	lease := &coordv1.Lease{}
