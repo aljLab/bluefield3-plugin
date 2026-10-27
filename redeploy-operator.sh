@@ -48,3 +48,11 @@ echo
 echo "==> Reapplying newly built operator Pod."
 echo
 kubectl apply -f dist/install.yaml
+
+# reapply driver accounts
+echo
+echo "==> Reapplying newly built operator Pod."
+echo
+kubectl apply -f config/rbac/driver-service-account.yaml
+kubectl apply -f config/rbac/driver-role.yaml
+kubectl apply -f config/rbac/driver-role-binding.yaml

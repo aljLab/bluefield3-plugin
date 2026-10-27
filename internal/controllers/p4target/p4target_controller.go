@@ -64,15 +64,6 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 
 	target := &corev1alpha1.P4Target{}
 	if err := r.Get(ctx, types.NamespacedName{Name: r.P4TargetManager.GetName()}, target); err != nil {
-		/* if errors.IsNotFound(err) {
-			err = r.createP4Target(ctx)
-			if err != nil {
-				logger.Error(err, "Failed to create P4Target")
-				return ctrl.Result{}, err
-			}
-			logger.Info("P4Target created")
-			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-		} -> moved to operator*/
 		logger.Error(err, "Failed to get P4Target")
 		return ctrl.Result{}, err
 	}
@@ -98,6 +89,9 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		logger.Error(err, "Failed to get the Driver Pod associated with this P4Target")
 		return ctrl.Result{}, err
 	} */
+	if target.Status.NodeName == "" {
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, r.updateP4TargetStatus(ctx, target)
+	}
 		
 	// NfCIDR is allocated by the primary p4target reconciler in the IML manager
 	if len(target.Spec.NfCIDR) == 0 {
