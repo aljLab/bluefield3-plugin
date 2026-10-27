@@ -149,5 +149,9 @@ func (r *BlueField3TargetReconciler) createP4Target(ctx context.Context, bf3targ
 		},
 		Spec: *util.EnsureP4TargetSpec(bf3target),
 	}
-	return r.Create(ctx, target)
+	_, err := controllerutil.CreateOrPatch(ctx, r.Client, target, func() error {
+		return controllerutil.SetControllerReference(bf3target, target, r.Scheme) // BlueField3Target owns P4Target
+	})
+
+	return err
 }
