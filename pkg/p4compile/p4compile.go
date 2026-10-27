@@ -89,6 +89,10 @@ func unpackArchive(resp *http.Response, unpackDir string) (string, string, error
 		return "", "", fmt.Errorf("writing archive file: %w", err)
 	}
 
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return "", "", fmt.Errorf("rewinding archive file: %w", err)
+	}
+
 	err = extractTarGzFlat(f, unpackDir)
 	if err != nil {
 		return "", "", fmt.Errorf("extracting archive file to /tmp/unpack: %w", err)

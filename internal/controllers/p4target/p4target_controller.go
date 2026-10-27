@@ -89,7 +89,7 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		logger.Error(err, "Failed to get the Driver Pod associated with this P4Target")
 		return ctrl.Result{}, err
 	} */
-	logger.V(1).Info("P4target with ", "Status.NodeName", target.Status.NodeName)
+	
 	if target.Status.NodeName == "" {
 		logger.V(1).Info("P4Target does not nodeName set in status. Setting and requeueing after 10 seconds.")
 		err := r.updateP4TargetStatus(ctx, target); if err != nil {
