@@ -19,6 +19,7 @@ package bf3
 import (
 	"context"
 	"fmt"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
 	bf3util "github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
@@ -43,6 +46,10 @@ type BlueField3TargetReconciler struct {
 	Scheme *runtime.Scheme
 	Config *util.Bf3DriverConfig
 }
+
+const(
+	P4TargetNamespace = "default"
+)
 
 // +kubebuilder:rbac:groups=plugins.loom.io,resources=bluefield3targets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=plugins.loom.io,resources=bluefield3targets/status,verbs=get;update;patch
@@ -76,11 +83,23 @@ func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// ensure P4Target deployment
-	err = r.createP4Target(ctx, bf3Target); if err != nil {
-		logger.Error(err, "unable to create P4Target")
+	target := &corev1alpha1.P4Target{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name: *bf3Target.Spec.NodeName, 
+		Namespace: P4TargetNamespace,
+	}, target); err != nil {
+		if errors.IsNotFound(err) {
+			err = r.createP4Target(ctx, bf3Target); if err != nil {
+				logger.Error(err, "unable to create P4Target")
+				return ctrl.Result{}, err
+			}
+			logger.Info("P4Target created")
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+		logger.Error(err, "Failed to get P4Target")
 		return ctrl.Result{}, err
 	}
-	
+	logger.Info("Deploying Driver Pod")
 	// deploy driver pod
 	_, err = r.ensureDeployment(ctx, bf3Target)
 	if err != nil {
