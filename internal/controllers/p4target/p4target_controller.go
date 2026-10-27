@@ -204,12 +204,11 @@ func (r *Reconciler) calculateP4TargetStatus(bf3target *v1alpha1.BlueField3Targe
 
 func (r *Reconciler) FetchBF3TargetOwner(ctx context.Context, p4target *corev1alpha1.P4Target) (*v1alpha1.BlueField3Target, error) {
 	for _, owner := range p4target.OwnerReferences {
-		if owner.APIVersion == v1alpha1.GroupVersion.String() &&
-			owner.Kind == "BlueField3Target" {
+			if owner.Kind == "BlueField3Target" {
 
 			var target v1alpha1.BlueField3Target
 			err := r.Get(ctx, types.NamespacedName{
-				Namespace: p4target.Namespace,
+				Namespace: "default",
 				Name:      owner.Name,
 			}, &target)
 			if err != nil {
@@ -220,7 +219,7 @@ func (r *Reconciler) FetchBF3TargetOwner(ctx context.Context, p4target *corev1al
 		}
 	}
 
-	return nil, fmt.Errorf("failed to fetch owneing bluefield3target")
+	return nil, fmt.Errorf("found no owner of matching type BlueField3Target")
 }
 
 func (r *Reconciler) Start(ctx context.Context) error {
