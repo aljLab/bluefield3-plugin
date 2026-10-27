@@ -9,11 +9,11 @@ kubectl delete -f dist/install.yaml --ignore-not-found=true
 
 # delete old operator service accounts
 echo
-echo "==> Deleting old operator service accounts, roles, bindings"
+echo "==> Deleting old driver service accounts, roles, bindings"
 echo
-kubectl delete -f config/rbac/operator-service-account.yaml --ignore-not-found=true
-kubectl delete -f config/rbac/operator-role.yaml --ignore-not-found=true
-kubectl delete -f config/rbac/operator-role-binding.yaml --ignore-not-found=true
+kubectl delete -f config/rbac/driver-service-account.yaml --ignore-not-found=true
+kubectl delete -f config/rbac/driver-role.yaml --ignore-not-found=true
+kubectl delete -f config/rbac/driver-role-binding.yaml --ignore-not-found=true
 
 # delete old image
 echo
