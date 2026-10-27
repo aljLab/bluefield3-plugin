@@ -1,7 +1,7 @@
 package util
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -140,7 +140,7 @@ func EnsureBf3DriverContainer(target *v1alpha1.BlueField3Target, conf *Bf3Driver
 		"--target-name", target.Name,
 		"--max-nf-slots", "1",
 	}
-	container.Env = EnsureDriverEnvVars(target, container.Env)
+	// container.Env = EnsureDriverEnvVars(target, container.Env)
 	return container
 }
 
@@ -150,12 +150,12 @@ func EnsureBf3PodMeta(target *v1alpha1.BlueField3Target, meta *metav1.ObjectMeta
 	}
 
 	meta.Labels = map[string]string{v1alpha1.BlueField3TargetLabel: target.Name} // TODO extract to method
-	meta.Annotations = GetBf3PodTemplateAnnotations(target)
+	meta.Annotations = map[string]string{} //GetBf3PodTemplateAnnotations(target)
 
 	return meta
 }
 
-func GetBf3PodTemplateAnnotations(target *v1alpha1.BlueField3Target) map[string]string {
+/* func GetBf3PodTemplateAnnotations(target *v1alpha1.BlueField3Target) map[string]string {
 	return map[string]string{
 		"k8s.v1.cni.cncf.io/networks": "[" + NewCNIConfigForTarget(target).String() + "]",
 	}
@@ -259,4 +259,4 @@ func EnsurePodNamespaceEnvVar(existing []corev1.EnvVar) []corev1.EnvVar {
 	}
 	foundEnvVar.ValueFrom.FieldRef.FieldPath = "metadata.namespace"
 	return existing
-}
+} */
