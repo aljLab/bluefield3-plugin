@@ -94,8 +94,8 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
-	var maxNFSlots int
-	var targetName, oobAddr, deviceId, p4rPort, dataIface, controlIface string
+	var maxNFSlots, deviceId int
+	var targetName, oobAddr, p4rPort, dataIface, controlIface string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -118,7 +118,7 @@ func main() {
 	flag.StringVar(&oobAddr, "oob-addr", "172.16.44.81", "The Out-Of-Band IPv4 address of the Bluefield 3 Card.")
 	flag.StringVar(&p4rPort, "p4r-port", "9559",
 		"The gRPC port to use with the Out-Of-Band address for p4runtime communication.")
-	flag.StringVar(&deviceId, "device-id", "1000",
+	flag.IntVar(&deviceId, "device-id", 1000,
 		"The device-ID to use when communicating with DPL P4Runtime server.")
 	flag.IntVar(&maxNFSlots, "max-nf-slots", 1, "The maximum amount of schedulable NFs on the target at the same time.")
 	flag.StringVar(&targetName, "target-name", "bf3", "The name of the programmable target.")
@@ -225,14 +225,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// discover targetIPs (NetworkConfig.IPNet) from interface iml0 (set up by CNI deployment -> is skipped here)
-	/*targetIPs, err := discoverIPs(dataIface)
-	if err != nil {
-		setupLog.Error(err, "failed to discover target IPs", "iface", dataIface)
-		os.Exit(1)
-	}
-	setupLog.Info(fmt.Sprintf("Discovered target IPs on %s: %v", dataIface, targetIPs))*/
-
 	// fetch IP assigned by primary CNI via the container interface (veth-peer) connected to the (primary) CNI bridge
 	driverIPs, err := discoverIPs(controlIface)
 	if err != nil {
@@ -271,6 +263,7 @@ func main() {
 		MaxNFSlots: maxNFSlots,
 		// TargetIPs:  targetIPs,
 		DriverIPs:  driverIPs,
+		DeviceId: deviceId,
 		Log:        ctrl.Log.WithName("p4target-manager"),
 	})
 	if err != nil {

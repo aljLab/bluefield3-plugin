@@ -12,6 +12,7 @@ rules:
   - bluefield3targets
   verbs:
   - get
+  - watch
   - list
 - apiGroups:
   - core.loom.io

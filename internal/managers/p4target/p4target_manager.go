@@ -38,6 +38,7 @@ type ManagerConfig struct {
 	P4Client   p4v1.P4RuntimeClient
 	BridgeName string
 	Log        logr.Logger
+	DeviceId   int
 }
 
 
@@ -75,6 +76,7 @@ func NewManager(cfg ManagerConfig) (Manager, error) {
 		// BridgeName:   cfg.BridgeName,
 		allocatedIPs: make(map[netip.Addr]struct{}),
 		log:          cfg.Log,
+		DeviceId:     cfg.DeviceId,
 	}, nil
 }
 
@@ -87,14 +89,13 @@ type RealManager struct {
 	driverIPs  []net.IP
 	maxNFSlots int
 	p4client   p4v1.P4RuntimeClient
-	// BridgeName string // created from cni
 	log        logr.Logger
 
 	mu           sync.RWMutex
 	cidr         netip.Prefix
 	ipAllocator  *ipam.AddrAllocator
 	allocatedIPs map[netip.Addr]struct{}
-	proxyCancel  context.CancelFunc
+	DeviceId  int
 }
 
 func (r *RealManager) GetNfCIDR() netip.Prefix {
@@ -131,148 +132,6 @@ func (r *RealManager) EnsureNetworkConfiguration(cfg net_utils.TargetNetConfig) 
 	r.ipAllocator = alloc
 	r.allocatedIPs = make(map[netip.Addr]struct{})
 	
-	/* // TODO: get actual MTU
-	MTU := 1294
-	table1 := 200
-	prio1 := 200
-	// ip -6 route <netfunc.AssignedIP> dev tun0 -> configured by NF manager but tun devices need to exist first
-	tun0, tun1, err := utils.CreateTunDevices(MTU); if err != nil {
-		return fmt.Errorf("failed to create tun devices: %w", err)
-	}
-
-	inIfaceName := "bf0" // todo get from network annotations or owner BlueField3Target
-	outIfaceName := "bf1"
-
-	inIface, err := netlink.LinkByName(inIfaceName); if err != nil {
-		return fmt.Errorf("failed to get incoming interface: %w", err)
-	}
-	outIface, err := netlink.LinkByName(outIfaceName); if err != nil {
-		return fmt.Errorf("failed to get incoming interface: %w", err)
-	}
-
-	// ip (-6) rule iif tun0 lookup 200 -> v4/6 200: default via <bogus-ip> dev bf0 (get name from Pod spec)
-	err = utils.EnsureRule(netlink.FAMILY_V4, prio1, table1, tun0.Name); if err != nil {
-		return fmt.Errorf("failed adding rule: %d, %d, %d, %s", 
-		netlink.FAMILY_V4, prio1, table1, tun0.Name)
-	}
-	err = utils.EnsureRule(netlink.FAMILY_V6, prio1, table1, tun0.Name); if err != nil {
-		return fmt.Errorf("failed adding rule: %d, %d, %d, %s", 
-		netlink.FAMILY_V6, prio1, table1, tun0.Name)
-	}
-
-	bogusGW4 := net.IPv4(10, 13, 37, 1)
-	bogusGW6, err := r.AllocateNetworkFunctionIP(); if err != nil {
-		return fmt.Errorf("failed to allocate IPv6 ip for bogus gateway")
-	}
-	_, defaultDst4, _ := net.ParseCIDR("0.0.0.0/0")
-	_, defaultDst6, _ := net.ParseCIDR("::/0")
-	
-	route4 := &netlink.Route{
-		LinkIndex: inIface.Attrs().Index,
-		Gw:        bogusGW4,
-		Dst:       defaultDst4,
-		Table:     table1,
-		Family:    netlink.FAMILY_V4,
-	}
-
-	route6 := &netlink.Route{
-		LinkIndex: inIface.Attrs().Index,
-		Gw:        net.ParseIP(bogusGW6.String()),
-		Dst:       defaultDst6,
-		Table:     table1,
-		Family:    netlink.FAMILY_V6,
-	}
-
-	err = utils.EnsureRoute(route4); if err != nil {
-		return fmt.Errorf("failed adding route -%d %s via %s dev %s table %d", 
-		netlink.FAMILY_V4, defaultDst4.String(), bogusGW4.String(), inIfaceName, table1)
-	}
-	err = utils.EnsureRoute(route6); if err != nil {
-		return fmt.Errorf("failed adding route -%d %s via %s dev %s table %d", 
-		netlink.FAMILY_V6, defaultDst6.String(), bogusGW6.String(), inIfaceName, table1)
-	}
-
-	// ip neigh <bogus-ip> lladdr <bf1-mac> nud permanent
-	hwAddr := outIface.Attrs().HardwareAddr
-	neigh4 := &netlink.Neigh{
-        LinkIndex:    inIface.Attrs().Index,
-        IP:           bogusGW4,
-        HardwareAddr: hwAddr,
-        State:        netlink.NUD_PERMANENT,
-    }
-	netlink.NeighSet(neigh4)
-
-	neigh6 := &netlink.Neigh{
-        LinkIndex:    inIface.Attrs().Index,
-        IP:           net.ParseIP(bogusGW6.String()),
-        HardwareAddr: hwAddr,
-        State:        netlink.NUD_PERMANENT,
-    }
-	netlink.NeighSet(neigh6)
-
-	table2 := 201
-	prio2 := 201
-
-	// ip (-6) rule iif bf1 lookup 201: v4/6 201: default dev tun1
-	err = utils.EnsureRule(4, prio2, table2, inIfaceName); if err != nil {
-		return fmt.Errorf("failed adding rule: family IPv%d, priority %d, table %d, iif %s", 
-		netlink.FAMILY_V4, prio2, table2, inIfaceName)
-	}
-	err = utils.EnsureRule(6, prio2, table2, inIfaceName); if err != nil {
-		return fmt.Errorf("failed adding rule: family IPv%d, priority %d, table %d, iif %s", 
-		netlink.FAMILY_V6, prio2, table2, inIfaceName)
-	}
-
-	err = utils.EnsureRoute(&netlink.Route{
-		LinkIndex: tun1.Link.Attrs().Index,
-		Dst: defaultDst4,
-		Table: table2,
-		Family: netlink.FAMILY_V4,
-	}); if err != nil {
-		return fmt.Errorf("failed to add route -%d %s dev %s table %d", 
-		netlink.FAMILY_V4, defaultDst4.String(), tun1.Name, table2)
-	}
-
-	err = utils.EnsureRoute(&netlink.Route{
-		LinkIndex: tun1.Link.Attrs().Index,
-		Dst: defaultDst6,
-		Table: table2,
-		Family: netlink.FAMILY_V6,
-	}); if err != nil {
-		return fmt.Errorf("failed to add route -%d %s dev %s table %d", 
-		netlink.FAMILY_V6, defaultDst6.String(), tun1.Name, table2)
-	}
-
-	// ip -6 route default <gateway-ip> (get from Pod spec) via iml0
-	defaultIface, err := netlink.LinkByName("iml0"); if err != nil {
-		return fmt.Errorf("failed to get iml0 interface: %w", err)
-	}
-	err = utils.EnsureRoute(&netlink.Route{
-		LinkIndex: defaultIface.Attrs().Index,
-		Dst: defaultDst6,
-		//Gw: IpOfRoutingBridge,
-		Table: unix.RT_TABLE_MAIN,
-		Family: netlink.FAMILY_V6,
-	})
-
-	cache := &proxy.SRHCache{}
-
-	decapWorker := &proxy.SRv6ProxyWorker{
-		IfaceName: tun0.Name,
-		TunDev:    tun0.Device,
-		Cache:     cache,
-	}
-	encapWorker := &proxy.SRv6ProxyWorker{
-		IfaceName: tun1.Name,
-		TunDev:    tun1.Device,
-		Cache:     cache,
-	}
-
-	proxyCancel, err := r.ensureProxyRunning(context.Background(), decapWorker, encapWorker); if err != nil {
-		return fmt.Errorf("Couldn't start proxy background workers: %w", err)
-	}
-
-	r.proxyCancel = proxyCancel */
 	return nil
 }
 
@@ -357,7 +216,14 @@ func (r *RealManager) GetHealthyCondition() corev1alpha1.P4TargetCondition {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	now := metav1.NewTime(time.Now())
-	_, err := r.p4client.Capabilities(ctx, &p4v1.CapabilitiesRequest{})
+	// _, err := r.p4client.Capabilities(ctx, &p4v1.CapabilitiesRequest{}) -> not supported by NVIDIA
+	_, err := r.p4client.GetForwardingPipelineConfig(
+		ctx,
+		&p4v1.GetForwardingPipelineConfigRequest{
+			DeviceId:     uint64(r.DeviceId),
+			ResponseType: p4v1.GetForwardingPipelineConfigRequest_COOKIE_ONLY,
+		},
+	)
 	if err != nil {
 		return corev1alpha1.P4TargetCondition{
 			Type:              ConditionHealthy,
@@ -441,14 +307,3 @@ func (r *RealManager) GetOccupiedCondition() corev1alpha1.P4TargetCondition {
 		Message:           fmt.Sprintf("%d/%d slots used", used, r.maxNFSlots),
 	}
 }
-
-/* func (r *RealManager) ensureProxyRunning(ctx context.Context, w1, w2 *proxy.SRv6ProxyWorker) (context.CancelFunc, error) {
-	ctx, cancel := context.WithCancel(ctx)
-
-	go w1.DecapTraffic(ctx, r.log)
-
-	go w2.EncapTraffic(ctx, r.log)
-
-	return cancel, nil
-}
- */

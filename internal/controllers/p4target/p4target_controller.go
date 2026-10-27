@@ -104,13 +104,10 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
-	// TargetDataplaneIPs are assigned by the IML daemon
+	// TargetDataplaneIPs are assigned by the IML daemon after status.NodeName has been set
 	if len(target.Spec.TargetDataplaneIPs) == 0 {
 		logger.V(1).Info("P4Target does not have any TargetDataplaneIPs. Requeueing after 10 seconds.")
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-	} else {
-		// r.P4TargetManager.SetTargetIPs(target.Spec.TargetDataplaneIPs)
-		logger.V(1).Info("Setting configured target dataplane IPs on P4target resource")
 	}
 
 	if err := r.P4TargetManager.EnsureNetworkConfiguration(net_types.TargetNetConfig{
@@ -123,55 +120,9 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 	return ctrl.Result{}, r.updateP4TargetStatus(ctx, target)//, targetPod)
 }
 
-/* 
---> moved to bf3target_controller
-func (r *Reconciler) createP4Target(ctx context.Context) error {
-	target := &corev1alpha1.P4Target{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: r.P4TargetManager.GetName(),
-			Labels: map[string]string{
-				corev1alpha1.P4TargetArchitectureLabel: "doca-bf3",
-			},
-		},
-		Spec: corev1alpha1.P4TargetSpec{},
-	}
-	return r.Create(ctx, target)
-} */
-
-
-/* func (r *Reconciler) updateP4TargetStatus(ctx context.Context, target *corev1alpha1.P4Target, targetPod *v1.Pod) error {
-	original := target.DeepCopy()
-	target.Status = r.calculateP4TargetStatus(targetPod)
-	if utils.StatusChanged(original, target) {
-		return r.Status().Patch(ctx, target, client.MergeFrom(original))
-	}
-	return nil
-}
-
-func (r *Reconciler) calculateP4TargetStatus(targetPod *v1.Pod) corev1alpha1.P4TargetStatus {
-	targetStatus := corev1alpha1.P4TargetStatus{}
-	targetStatus.NodeName = "dtn-04" // targetPod.Spec.NodeName // TODO: get from Bluefield3target spec
-	targetStatus.Capacity = r.P4TargetManager.GetCapacity()
-	targetStatus.Allocatable = r.P4TargetManager.GetAllocatable()
-
-	// targetStatus.TargetIPs = utils.FilterIPs(r.P4TargetManager.GetTargetIPs())
-	targetStatus.DriverIPs = utils.FilterIPs(r.P4TargetManager.GetDriverIPs())
-
-	occupiedCondition := r.P4TargetManager.GetOccupiedCondition()
-	healthyCondition := r.P4TargetManager.GetHealthyCondition()
-	netconfCondition := r.P4TargetManager.GetNetworkConfiguredCondition()
-	readyCondition := r.P4TargetManager.GetReadyCondition(healthyCondition, netconfCondition)
-
-	targetStatus.Conditions = []corev1alpha1.P4TargetCondition{}
-	targetStatus.Conditions = append(targetStatus.Conditions, readyCondition)
-	targetStatus.Conditions = append(targetStatus.Conditions, healthyCondition)
-	targetStatus.Conditions = append(targetStatus.Conditions, netconfCondition)
-	targetStatus.Conditions = append(targetStatus.Conditions, occupiedCondition)
-	return targetStatus
-} */
 func (r *Reconciler) updateP4TargetStatus(ctx context.Context, target *corev1alpha1.P4Target) error {
 	original := target.DeepCopy()
-	bf3target, err := r.FetchBF3TargetOwner(ctx, target); if err != nil {
+	bf3target, err := r.GetOwningBF3Target(ctx, target); if err != nil {
 		return fmt.Errorf("failed to fetch BF3Target %w", err)
 	}
 	target.Status = r.calculateP4TargetStatus(bf3target)
@@ -186,7 +137,6 @@ func (r *Reconciler) calculateP4TargetStatus(bf3target *v1alpha1.BlueField3Targe
 	targetStatus.Capacity = r.P4TargetManager.GetCapacity()
 	targetStatus.Allocatable = r.P4TargetManager.GetAllocatable()
 	targetStatus.NodeName = *bf3target.Spec.NodeName
-	// targetStatus.TargetIPs = utils.FilterIPs(r.P4TargetManager.GetTargetIPs()) -> maybe get here from Spec
 	targetStatus.DriverIPs = utils.FilterIPs(r.P4TargetManager.GetDriverIPs())
 
 	occupiedCondition := r.P4TargetManager.GetOccupiedCondition()
@@ -202,13 +152,12 @@ func (r *Reconciler) calculateP4TargetStatus(bf3target *v1alpha1.BlueField3Targe
 	return targetStatus
 }
 
-func (r *Reconciler) FetchBF3TargetOwner(ctx context.Context, p4target *corev1alpha1.P4Target) (*v1alpha1.BlueField3Target, error) {
+func (r *Reconciler) GetOwningBF3Target(ctx context.Context, p4target *corev1alpha1.P4Target) (*v1alpha1.BlueField3Target, error) {
 	for _, owner := range p4target.OwnerReferences {
 			if owner.Kind == "BlueField3Target" {
 
 			var target v1alpha1.BlueField3Target
 			err := r.Get(ctx, types.NamespacedName{
-				Namespace: "default",
 				Name:      owner.Name,
 			}, &target)
 			if err != nil {
