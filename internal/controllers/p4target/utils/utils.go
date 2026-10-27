@@ -19,9 +19,9 @@ func StatusChanged(original, target *corev1alpha1.P4Target) bool {
 	if ResourceListsChanged(original.Status.Allocatable, target.Status.Allocatable) {
 		return true
 	}
-	if !slices.Equal(original.Status.TargetIPs, target.Status.TargetIPs) {
+	/* if !slices.Equal(original.Status.TargetIPs, target.Status.TargetIPs) {
 		return true
-	}
+	} */
 	if !slices.Equal(original.Status.DriverIPs, target.Status.DriverIPs) {
 		return true
 	}

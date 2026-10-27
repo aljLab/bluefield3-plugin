@@ -74,6 +74,12 @@ func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Error(err, "unable to fetch BlueField3Target")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
+	// ensure P4Target deployment
+	err = r.createP4Target(ctx, bf3Target); if err != nil {
+		logger.Error(err, "unable to create P4Target")
+		return ctrl.Result{}, err
+	}
 	
 	// deploy driver pod
 	_, err = r.ensureDeployment(ctx, bf3Target)
@@ -114,4 +120,17 @@ func (r *BlueField3TargetReconciler) ensureDeployment(ctx context.Context,
 		return controllerutil.SetControllerReference(target, dep, r.Scheme) // BlueField3Target owns Deployment
 	})
 	return dep, err
+}
+
+func (r *BlueField3TargetReconciler) createP4Target(ctx context.Context, bf3target *v1alpha1.BlueField3Target) error {
+	target := &corev1alpha1.P4Target{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: *bf3target.Spec.NodeName,
+			Labels: map[string]string{
+				corev1alpha1.P4TargetArchitectureLabel: "doca-bf3",
+			},
+		},
+		Spec: *bf3util.EnsureP4TargetSpec(bf3target),
+	}
+	return r.Create(ctx, target)
 }

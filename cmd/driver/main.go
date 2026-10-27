@@ -267,7 +267,6 @@ func main() {
 		MaxNFSlots: maxNFSlots,
 		TargetIPs:  targetIPs,
 		DriverIPs:  driverIPs,
-		// BridgeName: "br0",
 		Log:        ctrl.Log.WithName("p4target-manager"),
 	})
 	if err != nil {

@@ -31,7 +31,7 @@ import (
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -62,7 +62,7 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 
 	target := &corev1alpha1.P4Target{}
 	if err := r.Get(ctx, types.NamespacedName{Name: r.P4TargetManager.GetName()}, target); err != nil {
-		if errors.IsNotFound(err) {
+		/* if errors.IsNotFound(err) {
 			err = r.createP4Target(ctx)
 			if err != nil {
 				logger.Error(err, "Failed to create P4Target")
@@ -70,7 +70,7 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 			}
 			logger.Info("P4Target created")
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-		}
+		} -> moved to operator*/
 		logger.Error(err, "Failed to get P4Target")
 		return ctrl.Result{}, err
 	}
@@ -98,10 +98,6 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
-	// TODO: fetch gateway (routing bridge IP) from pod annotations 
-	// + interface names from annotations or bluefield3Target resource.SPec
-	// -> pass to P4target.EnsureNetworkConfiguration
-
 	if err := r.P4TargetManager.EnsureNetworkConfiguration(net_types.TargetNetConfig{
 		NfCIDR: target.Spec.NfCIDR,
 	}); err != nil {
@@ -112,6 +108,8 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 	return ctrl.Result{}, r.updateP4TargetStatus(ctx, target, targetPod)
 }
 
+/* 
+--> moved to bf3target_controller
 func (r *Reconciler) createP4Target(ctx context.Context) error {
 	target := &corev1alpha1.P4Target{
 		ObjectMeta: metav1.ObjectMeta{
@@ -123,7 +121,7 @@ func (r *Reconciler) createP4Target(ctx context.Context) error {
 		Spec: corev1alpha1.P4TargetSpec{},
 	}
 	return r.Create(ctx, target)
-}
+} */
 
 
 func (r *Reconciler) updateP4TargetStatus(ctx context.Context, target *corev1alpha1.P4Target, targetPod *v1.Pod) error {
@@ -137,11 +135,11 @@ func (r *Reconciler) updateP4TargetStatus(ctx context.Context, target *corev1alp
 
 func (r *Reconciler) calculateP4TargetStatus(targetPod *v1.Pod) corev1alpha1.P4TargetStatus {
 	targetStatus := corev1alpha1.P4TargetStatus{}
-	targetStatus.NodeName = targetPod.Spec.NodeName
+	targetStatus.NodeName = "dtn-04" // targetPod.Spec.NodeName // TODO: get from Bluefield3target spec
 	targetStatus.Capacity = r.P4TargetManager.GetCapacity()
 	targetStatus.Allocatable = r.P4TargetManager.GetAllocatable()
 
-	targetStatus.TargetIPs = utils.FilterIPs(r.P4TargetManager.GetTargetIPs())
+	// targetStatus.TargetIPs = utils.FilterIPs(r.P4TargetManager.GetTargetIPs())
 	targetStatus.DriverIPs = utils.FilterIPs(r.P4TargetManager.GetDriverIPs())
 
 	occupiedCondition := r.P4TargetManager.GetOccupiedCondition()

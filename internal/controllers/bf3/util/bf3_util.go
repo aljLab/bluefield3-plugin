@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/json"
 	"github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
+	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,6 +13,39 @@ type Bf3DriverConfig struct {
 	ContainerName string
 	DriverImage   string
 	PodNamespace  string
+}
+
+/*
+spec:
+	network:
+		srv6:
+			mode: Proxy
+		hostInterfaces:
+			strategy: Reuse
+			reuse:
+				names: ["bf0", "bf1"] -> get from BF3TargetSpec
+*/
+func EnsureP4TargetSpec(target *v1alpha1.BlueField3Target) *corev1alpha1.P4TargetSpec {
+	spec := &corev1alpha1.P4TargetSpec{}
+	spec.Network = EnsureP4TargetNetwork(target)
+	return spec
+}
+
+func EnsureP4TargetNetwork(target *v1alpha1.BlueField3Target) *corev1alpha1.P4TargetNetwork {
+	p4net := &corev1alpha1.P4TargetNetwork{}
+	p4net.SRv6 = &corev1alpha1.SRv6Config{
+		Mode: "Proxy",
+	}
+	p4net.HostInterfaces = &corev1alpha1.HostInterfaces{
+		Strategy: "Reuse",
+		Reuse: &corev1alpha1.ReuseHostInterfaces{
+			Names: []string{
+				*target.Spec.InInterface,
+				*target.Spec.OutInterface,
+			},
+		},
+	}
+	return p4net
 }
 
 func EnsureBf3DeploymentLabels(target *v1alpha1.BlueField3Target, labels map[string]string) map[string]string {
