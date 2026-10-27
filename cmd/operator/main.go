@@ -92,9 +92,8 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.StringVar(&driverServiceAccount, "driver-service-account", "loom-bf3-driver-account",
-		"The name of the BF3 driver service account (default 'loom-bf3-driver-account')")
-
+	flag.StringVar(&driverServiceAccount, "driver-service-account", "loom-bf3-driver",
+		"The name of the BF3 driver service account (default 'loom-bf3-driver')")
 	opts := zap.Options{
 		Development: true,
 	}

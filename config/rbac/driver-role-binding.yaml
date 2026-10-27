@@ -11,5 +11,5 @@ roleRef:
   name: loom-bf3-driver-role
 subjects:
 - kind: ServiceAccount
-  name: loom-bf3-driver-account
+  name: loom-bf3-driver
   namespace: loom-system

@@ -143,7 +143,7 @@ func (r *BlueField3TargetReconciler) ensureDeployment(ctx context.Context,
 func (r *BlueField3TargetReconciler) createP4Target(ctx context.Context, bf3target *v1alpha1.BlueField3Target) error {
 	target := &corev1alpha1.P4Target{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: *bf3target.Spec.NodeName,
+			Name: bf3target.Name,
 			Labels: map[string]string{
 				corev1alpha1.P4TargetArchitectureLabel: "doca-bf3",
 			},
