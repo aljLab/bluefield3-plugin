@@ -84,8 +84,7 @@ func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// ensure P4Target deployment
 	target := &corev1alpha1.P4Target{}
 	if err := r.Get(ctx, types.NamespacedName{
-		Name: *bf3Target.Spec.NodeName, 
-		Namespace: P4TargetNamespace,
+		Name: bf3Target.Name,
 	}, target); err != nil {
 		if errors.IsNotFound(err) {
 			err = r.createP4Target(ctx, bf3Target); if err != nil {
