@@ -1,0 +1,14 @@
+apiVersion: core.loom.io/v1alpha1
+kind: ServiceChain
+metadata:
+  name: client-to-server
+spec:
+  from:
+    name: client
+    namespace: default
+  to:
+    name: server
+    namespace: default
+  functions:
+  - matchLabels:
+      nf: test-nf-0

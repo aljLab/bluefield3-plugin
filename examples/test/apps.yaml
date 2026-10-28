@@ -1,0 +1,72 @@
+apiVersion: core.loom.io/v1alpha1
+kind: Application
+metadata:
+  name: client
+spec: {}
+---
+apiVersion: core.loom.io/v1alpha1
+kind: Application
+metadata:
+  name: server
+spec: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{
+            "name": "loom-cni",
+            "namespace": "loom-system",
+            "cni-args": {
+              "app_type":      "application",
+              "app_name":      "client",
+              "app_namespace": "default"
+            }
+          }]
+    spec:
+      containers:
+      - name: client
+        image: alpine:3.20
+        command: ["sleep", "infinity"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{
+            "name": "loom-cni",
+            "namespace": "loom-system",
+            "cni-args": {
+              "app_type":      "application",
+              "app_name":      "server",
+              "app_namespace": "default"
+            }
+          }]
+    spec:
+      containers:
+      - name: server
+        image: nginx:latest
+        ports:
+        - containerPort: 80
