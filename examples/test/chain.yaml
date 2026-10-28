@@ -1,14 +1,14 @@
 apiVersion: core.loom.io/v1alpha1
 kind: ServiceChain
 metadata:
-  name: client-to-server
+  name: cli-to-serv
 spec:
   from:
-    name: client
+    name: cli
     namespace: default
   to:
-    name: server
+    name: serv
     namespace: default
   functions:
   - matchLabels:
-      nf: test-nf-0
+      nf: counter

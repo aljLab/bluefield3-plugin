@@ -1,0 +1,10 @@
+apiVersion: core.loom.io/v1alpha1
+kind: NetworkFunction
+metadata:
+  name: counter-nf
+  labels:
+    nf: counter
+spec:
+  p4File: https://github.com/aljLab/thesis-a-labonte/raw/refs/heads/main/p4/count_archive.tar.gz
+  targetSelector:
+    p4target.loom.io/arch: doca-bf3
