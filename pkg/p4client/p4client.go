@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4rutils"
 	"io"
+	"strings"
 
 	"github.com/mantra6g/bluefield3-plugin/api"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )
@@ -212,5 +216,52 @@ func (c *Bf3Client) EditTableEntries(ctx context.Context, entries []*p4v1.TableE
 		// ElectionId: &p4v1.Uint128{High: c.electionIDHigh, Low: c.electionIDLow},
 		Updates:    updates,
 	})
+	EnrichGRPCError(err)
 	return err
+}
+// EnrichGRPCError preserves the original error and adds gRPC detail messages.
+func EnrichGRPCError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		return err
+	}
+
+	var details strings.Builder
+
+	for i, detail := range st.Details() {
+		if detailErr, ok := detail.(error); ok {
+			fmt.Fprintf(&details, "\n  detail[%d] decode error: %v", i, detailErr)
+			continue
+		}
+
+		switch d := detail.(type) {
+		case *p4v1.Error:
+			b, marshalErr := protojson.Marshal(d)
+			if marshalErr != nil {
+				fmt.Fprintf(&details, "\n  detail[%d]: %#v", i, d)
+				continue
+			}
+			fmt.Fprintf(&details, "\n  detail[%d] p4.Error: %s", i, b)
+
+		default:
+			b, marshalErr := protojson.Marshal(
+				d.(interface{ ProtoReflect() protoreflect.Message }),
+			)
+			if marshalErr != nil {
+				fmt.Fprintf(&details, "\n  detail[%d]: %#v", i, d)
+				continue
+			}
+			fmt.Fprintf(&details, "\n  detail[%d]: %s", i, b)
+		}
+	}
+
+	if details.Len() == 0 {
+		return err
+	}
+
+	return fmt.Errorf("%w\nP4Runtime error details:%s", err, details.String())
 }
