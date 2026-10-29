@@ -78,6 +78,7 @@ func (c *Bf3Client) ResetPipeline(ctx context.Context) error {
 func (c *Bf3Client) GetPipeline(ctx context.Context) (*p4v1.GetForwardingPipelineConfigResponse, error) {
 	return c.P4Client.GetForwardingPipelineConfig(ctx, &p4v1.GetForwardingPipelineConfigRequest{
 		DeviceId: c.deviceID,
+		ResponseType: 0,
 	})
 }
 

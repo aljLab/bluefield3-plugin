@@ -2,6 +2,7 @@ package handlers
 
 import(
 	v1 "github.com/p4lang/p4runtime/go/p4/v1"
+	p4configv1 "github.com/p4lang/p4runtime/go/p4/config/v1"
 )
 
 type ErrorResponse struct {
@@ -73,9 +74,6 @@ type CounterMetadata struct {
 
 
 type P4ProgramResponse struct {
-	Status      string            `json:"status"`          // "deployed" or "not_deployed"
-	ProgramName string            `json:"program_name"`    // Name of deployed program
-	Tables      []TableMetadata   `json:"tables"`          // Table metadata
-	Counters    []CounterMetadata `json:"counters"`        // Counter metadata
-	Error       string            `json:"error,omitempty"` // Error message if any
+	Status string             `json:"status"`          // "deployed" or "not_deployed"
+	P4Info *p4configv1.P4Info `json:"p4info"`
 }
