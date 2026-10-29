@@ -13,5 +13,6 @@ type Driver struct {
 	Client         *p4client.Bf3Client
 	// Conn           *grpc.ClientConn
 	// CurrentProgram *api.P4Program
+	DeviceId 	uint64
 	Log            logr.Logger
 }

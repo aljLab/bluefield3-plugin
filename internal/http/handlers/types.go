@@ -15,4 +15,5 @@ type HealthResponse struct {
 
 type CounterDataResponse struct {
 	CounterEntries []*v1.CounterEntry `json:"counter_entries"`
+	DirectCounterEntries []*v1.DirectCounterEntry `json:"direct_counter_entries"`
 }

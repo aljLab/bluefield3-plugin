@@ -338,6 +338,7 @@ func main() {
 	driver := &handlers.Driver{
 		Client: bf3Client,
 		// Conn:   conn,
+		DeviceId: uint64(deviceId),
 		Log:    ctrl.Log.WithName("driver"),
 	}
 
