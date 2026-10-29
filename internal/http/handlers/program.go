@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
-	"log"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )	
 func (d *Driver) ProgramHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
@@ -15,6 +17,17 @@ func (d *Driver) ProgramHandler(w http.ResponseWriter, r *http.Request) {
 	config, err := d.Client.GetPipeline(ctx)
 
 	w.Header().Set("Content-Type", "application/json")
+
+	if config != nil {
+		p4i := config.Config.GetP4Info()
+		marshalled, _ := protojson.Marshal(p4i)
+		d.Log.Info("Retrieved p4info", "p4info", marshalled)
+		devConf := config.Config.P4DeviceConfig
+		d.Log.Info("Retrieved p4 dev config", "length", len(devConf))
+
+	}
+
+	d.Log.Info("Requesting device config", "Cookie")
 
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
