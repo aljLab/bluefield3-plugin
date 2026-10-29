@@ -56,19 +56,16 @@ func (d *Driver) readCounterEntries(ctx context.Context, w http.ResponseWriter) 
 	counterEntries := []*v1.CounterEntry{}
 	for {
 		response, err := stream.Recv()
-		d.Log.Info("Received counter resp", "Response", response)
 		if err != nil {
 			break
 		}
 		for _, entity := range response.GetEntities() {
 			ce := entity.GetCounterEntry()
-			d.Log.Info("Received counter entity", "Entity", ce)
 			if ce != nil && ce.Data != nil && (ce.Data.PacketCount != 0 || ce.Data.ByteCount != 0) {
 				counterEntries = append(counterEntries, ce)
 			}
 		}
 	}
-	d.Log.Info("Fetched counter entries: ", "Len", len(counterEntries))
 
 	return counterEntries, nil
 }
@@ -99,17 +96,13 @@ func (d *Driver) readDirectCounterEntries(ctx context.Context, w http.ResponseWr
 		if err != nil {
 			break
 		}
-		d.Log.Info("Received direct counter response", "Response", response)
 		for _, entity := range response.GetEntities() {
 			ce := entity.GetDirectCounterEntry()
-			d.Log.Info("Received direct counter entity", "Entity", ce)
 			if ce != nil && ce.Data != nil && (ce.Data.PacketCount != 0 || ce.Data.ByteCount != 0) {
 				directCounterEntries = append(directCounterEntries, ce)
 			}
 		}
 	}
-
-	d.Log.Info("Fetched direct counter entries: ", "Len", len(directCounterEntries))
 
 	return directCounterEntries, nil
 }
