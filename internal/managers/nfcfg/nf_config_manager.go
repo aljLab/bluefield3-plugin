@@ -27,7 +27,7 @@ type Manager interface {
 	GetAllNetworkFunctionsUsingConfig(nfCfgID client.ObjectKey) ([]client.ObjectKey, error)
 }
 
-// appliedState tracks the table entries that were written to the switch for one NF.
+// appliedState tracks the table entries that were written to the pipeline for one NF.
 type appliedState struct {
 	resourceVersion string
 	entries         []*p4v1.TableEntry
