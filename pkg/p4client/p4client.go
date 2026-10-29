@@ -198,7 +198,7 @@ func (c *Bf3Client) SetAllTableEntries(ctx context.Context, entries []*p4v1.Tabl
 	return nil
 }
 
-// EditTableEntries inserts or deletes table entries on the switch.
+// EditTableEntries inserts or deletes table entries in the pipeline
 func (c *Bf3Client) EditTableEntries(ctx context.Context, entries []*p4v1.TableEntry, updateType p4v1.Update_Type) error {
 	updates := make([]*p4v1.Update, 0, len(entries))
 	for _, e := range entries {

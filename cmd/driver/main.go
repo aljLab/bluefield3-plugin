@@ -51,6 +51,8 @@ import (
 	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
 	nfcfgmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nfcfg"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4client"
+	"github.com/mantra6g/bluefield3-plugin/internal/http/handlers"
+	bf3http "github.com/mantra6g/bluefield3-plugin/internal/http"
 
 	// +kubebuilder:scaffold:imports
 
@@ -271,7 +273,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// create NFManager
 	nfMgr, err := nfmgr.NewManager(nfmgr.ManagerConfig{
 		Bf3Client:       bf3Client,
 		P4TargetManager: p4targetMgr,
@@ -291,8 +292,6 @@ func main() {
 		setupLog.Error(err, "unable to create nfcfg manager")
 		os.Exit(1)
 	}
-
-	// create Metrics and DPCS server here and bind to driverIP
 
 	/*
 	RECONCILERS: P4Target, NetworkFunction, Lease (Node Heartbeat)
@@ -332,6 +331,20 @@ func main() {
 	}
 	if err = mgr.Add(renewer); err != nil {
 		setupLog.Error(err, "unable to add renewer as dependency of manager")
+		os.Exit(1)
+	}
+
+	// create Metrics HTTP server for Prometheus
+	driver := &handlers.Driver{
+		Client: bf3Client,
+		// Conn:   conn,
+		Log:    ctrl.Log.WithName("driver"),
+	}
+
+	// maybe bind to driver ip?
+	server := bf3http.NewServer("0.0.0.0:8080", driver, ctrl.Log.WithName("http-server"))
+	if err = mgr.Add(server); err != nil {
+		setupLog.Error(err, "unable to add http server as dependency of manager")
 		os.Exit(1)
 	}
 
