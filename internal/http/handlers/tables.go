@@ -46,13 +46,15 @@ func (d *Driver) ReadTableEntriesHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var entries []*v1.TableEntry
+	entries := []*v1.TableEntry{}
 	for {
 		response, err := stream.Recv()
 		if err != nil {
 			break
 		}
+		d.Log.Info("Got table response", "response", response)
 		for _, entity := range response.GetEntities() {
+			d.Log.Info("got table entity", "Entity", entity)
 			if te := entity.GetTableEntry(); te != nil {
 				entries = append(entries, te)
 			}
