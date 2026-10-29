@@ -340,6 +340,7 @@ func main() {
 		// Conn:   conn,
 		DeviceId: uint64(deviceId),
 		Log:    ctrl.Log.WithName("driver"),
+		DplServerAddr: "172.16.44.80:8090",
 	}
 
 	// maybe bind to driver ip?

@@ -15,4 +15,5 @@ type Driver struct {
 	// CurrentProgram *api.P4Program
 	DeviceId 	uint64
 	Log            logr.Logger
+	DplServerAddr  string
 }
