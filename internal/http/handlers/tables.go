@@ -85,7 +85,9 @@ func (d *Driver) InstallTableEntriesHandler(w http.ResponseWriter, r *http.Reque
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-
+	for _, en := range entries {
+		d.Log.Info("trying to add entries:", "entry", en)
+	}
 	err = d.Client.EditTableEntries(ctx, entries, v1.Update_INSERT)
 
 	w.Header().Set("Content-Type", "application/json")

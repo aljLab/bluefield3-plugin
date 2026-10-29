@@ -209,7 +209,7 @@ func (c *Bf3Client) EditTableEntries(ctx context.Context, entries []*p4v1.TableE
 	}
 	_, err := c.P4Client.Write(ctx, &p4v1.WriteRequest{
 		DeviceId:   c.deviceID,
-		ElectionId: &p4v1.Uint128{High: c.electionIDHigh, Low: c.electionIDLow},
+		// ElectionId: &p4v1.Uint128{High: c.electionIDHigh, Low: c.electionIDLow},
 		Updates:    updates,
 	})
 	return err
