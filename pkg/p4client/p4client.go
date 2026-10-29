@@ -234,7 +234,7 @@ func EnrichGRPCError(err error) error {
 
 	for i, detail := range st.Details() {
 		if detailErr, ok := detail.(error); ok {
-			fmt.Fprintf(&details, "\n  detail[%d] decode error: %v", i, detailErr)
+			fmt.Fprintf(&details, " detail[%d] decode error: %v", i, detailErr)
 			continue
 		}
 
@@ -242,20 +242,20 @@ func EnrichGRPCError(err error) error {
 		case *p4v1.Error:
 			b, marshalErr := protojson.Marshal(d)
 			if marshalErr != nil {
-				fmt.Fprintf(&details, "\n  detail[%d]: %#v", i, d)
+				fmt.Fprintf(&details, " detail[%d]: %#v", i, d)
 				continue
 			}
-			fmt.Fprintf(&details, "\n  detail[%d] p4.Error: %s", i, b)
+			fmt.Fprintf(&details, " detail[%d] p4.Error: %s", i, b)
 
 		default:
 			b, marshalErr := protojson.Marshal(
 				d.(interface{ ProtoReflect() protoreflect.Message }),
 			)
 			if marshalErr != nil {
-				fmt.Fprintf(&details, "\n  detail[%d]: %#v", i, d)
+				fmt.Fprintf(&details, " detail[%d]: %#v", i, d)
 				continue
 			}
-			fmt.Fprintf(&details, "\n  detail[%d]: %s", i, b)
+			fmt.Fprintf(&details, " detail[%d]: %s", i, b)
 		}
 	}
 
@@ -263,5 +263,5 @@ func EnrichGRPCError(err error) error {
 		return err
 	}
 
-	return fmt.Errorf("%w\nP4Runtime error details:%s", err, details.String())
+	return fmt.Errorf("%w P4Runtime error details:%s", err, details.String())
 }
