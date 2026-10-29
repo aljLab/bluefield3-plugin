@@ -35,6 +35,7 @@ func (d *Driver) ReadTableEntriesHandler(w http.ResponseWriter, r *http.Request)
 	d.Log.Info("Reading Table entries...")
 
 	stream, err := d.Client.P4Client.Read(ctx, &v1.ReadRequest{
+		DeviceId: d.DeviceId,
 		Entities: []*v1.Entity{
 			{Entity: &v1.Entity_TableEntry{TableEntry: &v1.TableEntry{}}},
 		},
