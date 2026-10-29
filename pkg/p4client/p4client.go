@@ -216,8 +216,8 @@ func (c *Bf3Client) EditTableEntries(ctx context.Context, entries []*p4v1.TableE
 		// ElectionId: &p4v1.Uint128{High: c.electionIDHigh, Low: c.electionIDLow},
 		Updates:    updates,
 	})
-	EnrichGRPCError(err)
-	return err
+	return EnrichGRPCError(err)
+	// return err
 }
 // EnrichGRPCError preserves the original error and adds gRPC detail messages.
 func EnrichGRPCError(err error) error {
