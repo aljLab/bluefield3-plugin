@@ -32,6 +32,8 @@ func (d *Driver) ReadTableEntriesHandler(w http.ResponseWriter, r *http.Request)
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
+	d.Log.Info("Reading Table entries...")
+
 	stream, err := d.Client.P4Client.Read(ctx, &v1.ReadRequest{
 		Entities: []*v1.Entity{
 			{Entity: &v1.Entity_TableEntry{TableEntry: &v1.TableEntry{}}},
@@ -50,6 +52,7 @@ func (d *Driver) ReadTableEntriesHandler(w http.ResponseWriter, r *http.Request)
 	for {
 		response, err := stream.Recv()
 		if err != nil {
+			d.Log.Info("Error when receiving table stream response", "err", err)
 			break
 		}
 		d.Log.Info("Got table response", "response", response)
