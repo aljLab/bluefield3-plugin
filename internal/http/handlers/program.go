@@ -16,18 +16,20 @@ func (d *Driver) ProgramHandler(w http.ResponseWriter, r *http.Request) {
 
 	config, err := d.Client.GetPipeline(ctx)
 
+	d.Log.Info("Received prog response", "response", config)
+	if err != nil {
+		d.Log.Info("Received prog error", "err", err)
+	}
 	w.Header().Set("Content-Type", "application/json")
 
 	if config != nil {
 		p4i := config.Config.GetP4Info()
 		marshalled, _ := protojson.Marshal(p4i)
 		d.Log.Info("Retrieved p4info", "p4info", marshalled)
-		devConf := config.Config.P4DeviceConfig
+		d.Log.Info("Retrieved p4info", "p4info (unmarshalled)", *p4i)
+		devConf := config.Config.GetP4DeviceConfig()
 		d.Log.Info("Retrieved p4 dev config", "length", len(devConf))
-
 	}
-
-	d.Log.Info("Requesting device config", "Cookie")
 
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
