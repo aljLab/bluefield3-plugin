@@ -29,5 +29,3 @@ go.work
 # Kubeconfig might contain secrets
 *.kubeconfig
 .DS_Store
-
-networking/

@@ -1,0 +1,20 @@
+{{- if and .Values.certManager.enable .Values.metrics.enable }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "iml-bmv2-plugin.name" . }}-operator
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  name: {{ include "iml-bmv2-plugin.resourceName" (dict "suffix" "metrics-certs" "context" $) }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  dnsNames:
+  - {{ include "iml-bmv2-plugin.resourceName" (dict "suffix" "controller-manager-metrics-service" "context" $) }}.{{ include "iml-bmv2-plugin.namespaceName" $ }}.svc
+  - {{ include "iml-bmv2-plugin.resourceName" (dict "suffix" "controller-manager-metrics-service" "context" $) }}.{{ include "iml-bmv2-plugin.namespaceName" $ }}.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: {{ include "iml-bmv2-plugin.resourceName" (dict "suffix" "selfsigned-issuer" "context" $) }}
+  secretName: metrics-server-cert
+{{- end }}

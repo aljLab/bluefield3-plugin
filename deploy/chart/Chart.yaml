@@ -1,0 +1,14 @@
+apiVersion: v2
+name: bluefield3-plugin
+description: A Helm chart to distribute bluefield3-plugin
+type: application
+
+version: 0.1.0
+appVersion: "local"
+
+keywords:
+  - kubernetes
+  - operator
+
+annotations:
+  kubebuilder.io/generated-by: kubebuilder
