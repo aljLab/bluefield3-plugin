@@ -81,6 +81,8 @@ func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	logger.V(1).Info("bf3target being reconciled is nil? %s", bf3Target)
+
 	// ensure P4Target deployment
 	target := &corev1alpha1.P4Target{}
 	if err := r.Get(ctx, types.NamespacedName{

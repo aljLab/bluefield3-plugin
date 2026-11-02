@@ -38,7 +38,7 @@ func EnsureP4TargetNetwork(target *v1alpha1.BlueField3Target) *corev1alpha1.P4Ta
 		Mode: "Proxy",
 	}
 	p4net.HostInterfaces = &corev1alpha1.HostInterfaces{
-		Strategy: "ReuseMapping",
+		Strategy: "ReuseMapped",
 		ReuseMapped: &corev1alpha1.ReuseMappedHostInterfaces{
 			IfacePairs: target.Spec.Interfaces,
 		},
