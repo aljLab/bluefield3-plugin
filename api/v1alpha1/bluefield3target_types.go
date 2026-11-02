@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	corev1 "k8s.io/api/core/v1"
+	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 )
 
 const (
@@ -48,10 +49,7 @@ type BlueField3TargetSpec struct {
 	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
 
 	// +required
-	InInterface *string `json:"inInterface"`
-
-	// +required
-	OutInterface *string `json:"outInterface"`
+	Interfaces []corev1alpha1.NfIfacePair `json:"interfaces"`
 
 	// +required
 	NodeName *string `json:"nodeName"`
@@ -59,8 +57,6 @@ type BlueField3TargetSpec struct {
 	// +optional
 	Resources ResourceRequirements `json:"resources,omitempty,omitzero"`
 }
-
-
 
 // BlueField3TargetStatus defines the observed state of BlueField3Target.
 type BlueField3TargetStatus struct {

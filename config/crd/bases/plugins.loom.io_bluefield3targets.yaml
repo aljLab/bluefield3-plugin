@@ -39,11 +39,27 @@ spec:
           spec:
             description: spec defines the desired state of BlueField3Target
             properties:
-              inInterface:
-                type: string
+              interfaces:
+                items:
+                  description: |-
+                    NfIfacePairs are used to describe a mapping between host-side interfaces representing in and out ports of the NF.
+                    The NF should adhere to this mapping internally.
+                    e.g. if nfPair = { In: "eth0", Out: "eth1" }, the NF should return traffic received from eth0 through eth1.
+                  properties:
+                    in:
+                      description: In is the interface for traffic towards the network
+                        function.
+                      type: string
+                    out:
+                      description: Out is the interface for traffic returning from
+                        the network function.
+                      type: string
+                  required:
+                  - in
+                  - out
+                  type: object
+                type: array
               nodeName:
-                type: string
-              outInterface:
                 type: string
               resources:
                 description: |-
@@ -74,9 +90,8 @@ spec:
                     type: object
                 type: object
             required:
-            - inInterface
+            - interfaces
             - nodeName
-            - outInterface
             type: object
           status:
             description: status defines the observed state of BlueField3Target
