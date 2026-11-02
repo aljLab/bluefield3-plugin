@@ -115,6 +115,8 @@ github.com/mantra6g/iml/api v0.0.0-20261026211519-d5cfdde5af4b h1:dIljTgJRcVOK+m
 github.com/mantra6g/iml/api v0.0.0-20261026211519-d5cfdde5af4b/go.mod h1:cIVFLwRVRpeK8ELXiKWUvodrv51ER0ud2JLXX/y2qOU=
 github.com/mantra6g/iml/api v0.0.0-20261102183256-f94c449f6d4c h1:GIhH3vFQy8o/FGsu+M3Z5QQ/DsPhFzGK5MSbzg0s58Q=
 github.com/mantra6g/iml/api v0.0.0-20261102183256-f94c449f6d4c/go.mod h1:cIVFLwRVRpeK8ELXiKWUvodrv51ER0ud2JLXX/y2qOU=
+github.com/mantra6g/iml/api v0.0.0-20261102194925-21c0ba96828d h1:+2RuNovUqkWYQeXgXJELrYQlB9gbyTQQGct8JmhrMnY=
+github.com/mantra6g/iml/api v0.0.0-20261102194925-21c0ba96828d/go.mod h1:cIVFLwRVRpeK8ELXiKWUvodrv51ER0ud2JLXX/y2qOU=
 github.com/maruel/natural v1.1.1 h1:Hja7XhhmvEFhcByqDoHz9QZbkWey+COd9xWfCfn1ioo=
 github.com/maruel/natural v1.1.1/go.mod h1:v+Rfd79xlw1AgVBjbO0BEQmptqb5HvL/k9GRHB7ZKEg=
 github.com/mfridman/tparse v0.18.0 h1:wh6dzOKaIwkUGyKgOntDW4liXSo37qg5AXbIhkMV3vE=
