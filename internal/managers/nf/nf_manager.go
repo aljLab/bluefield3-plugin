@@ -254,23 +254,10 @@ func (m *RealManager) preCheck(ctx context.Context, _ *corev1alpha1.NetworkFunct
 		return fmt.Errorf("no available NF slots on target (max: %d, allocated: %d)", m.maxNFSlots, deployed)
 	}
 
-	//slots := allocatable[p4targetpkg.ResourceNFSlots]
-	//if slots.Cmp(resource.MustParse("1")) < 0 {
-	//	return fmt.Errorf("no NF slots available on target")
-	//}
-
-	//if tableEntries, ok := allocatable[p4targetpkg.ResourceTableEntries]; ok {
-	//	if tableEntries.Cmp(resource.MustParse("1")) < 0 {
-	//		return fmt.Errorf("no table entries available on target")
-	//	}
-	//}
-
 	return nil
 }
 
-// deploy pushes the compiled P4 program to the BMv2 switch. If the switch
-// already has an identical program loaded (e.g. after a driver restart), the
-// SetForwardingPipelineConfig RPC is skipped to avoid unnecessary disruption.
+// deploy pushes the compiled P4 program to the DPL pipeline.
 func (m *RealManager) deploy(ctx context.Context, nf *corev1alpha1.NetworkFunction) error {
 	key := client.ObjectKeyFromObject(nf)
 	program := m.programs[key]
@@ -295,29 +282,7 @@ func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, n
 	key := client.ObjectKeyFromObject(nf)
 	program := m.programs[key]
 
-	/*
-	if program == nil || !nfIP.IsValid() {
-		return fmt.Errorf("invalid parameters for setting up network forwarding")
-	}
-	
-	_, ipnet, err := net.ParseCIDR(nfIP.String()); if err != nil {
-		return fmt.Errorf("Parsing assigned NF ip: %s, %w", nfIP.String(), err)
-	}
-	tun, err := netlink.LinkByName(m.ProxyTunnel); if err != nil {
-		return fmt.Errorf("fetching tunnel interface: %w", err)
-	}
-	
-	// route NF traffic through the SRv6 proxy
-	tunRoute := &netlink.Route{
-		LinkIndex: tun.Attrs().Index,
-		Dst:       ipnet,
-		Family:    netlink.FAMILY_V6,
-	}
-
-	err = netlink.RouteReplace(tunRoute); if err != nil {
-		return fmt.Errorf("creating srv6 proxy route: %w", err)
-	}
-	*/
+	/* read proxy config and make config request to daemon: re/load program */
 	program.IP = nfIP
 	return nil
 }
@@ -394,6 +359,9 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 }
 
 func (m *RealManager) teardownNetworkForwarding(nfIP netip.Prefix) error {
-	// m.p4targetManager.DellocateNetworkFunctionIP(nfIP.Addr())
+	m.p4targetManager.DeallocateNetworkFunctionIP(nfIP.Addr())
+
+	// remove/reset proxy configuration
+
 	return nil
 }
