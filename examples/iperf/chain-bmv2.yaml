@@ -1,0 +1,29 @@
+apiVersion: core.loom.io/v1alpha1
+kind: ServiceChain
+metadata:
+  name: iperf3-chain-bmv2-0
+spec:
+  from:
+    name: iperf-client0
+    namespace: default
+  to:
+    name: iperf-server0
+    namespace: default
+  functions:
+  - matchLabels:
+      nf: counter-bmv2
+---
+apiVersion: core.loom.io/v1alpha1
+kind: ServiceChain
+metadata:
+  name: iperf3-chain-bmv2-1
+spec:
+  from:
+    name: iperf-client1
+    namespace: default
+  to:
+    name: iperf-server1
+    namespace: default
+  functions:
+  - matchLabels:
+      nf: counter-bmv2

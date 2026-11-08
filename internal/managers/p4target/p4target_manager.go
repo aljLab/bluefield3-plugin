@@ -74,7 +74,6 @@ func NewManager(cfg ManagerConfig) (Manager, error) {
 		driverIPs:    cfg.DriverIPs,
 		maxNFSlots:   cfg.MaxNFSlots,
 		p4client:     cfg.P4Client,
-		// BridgeName:   cfg.BridgeName,
 		allocatedIPs: make(map[netip.Addr]struct{}),
 		log:          cfg.Log,
 		DeviceId:     cfg.DeviceId,

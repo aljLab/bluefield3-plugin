@@ -153,3 +153,11 @@ func decodeTableEntries(body io.Reader) ([]*v1.TableEntry, error) {
 	}
 	return entries, nil
 }
+
+func writeJSONError(w http.ResponseWriter, status int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(ErrorResponse{Error: msg}); err != nil {
+		log.Printf("failed to encode error response: %v", err)
+	}
+}

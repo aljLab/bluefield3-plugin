@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	// "net"
 
-	// "net"
 	"net/netip"
 	"strings"
 	"sync"
@@ -19,17 +17,14 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
-	// "github.com/vishvananda/netlink"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ManagerConfig struct {
 	Bf3Client       *p4client.Bf3Client
 	P4TargetManager p4tmgr.Manager
-	// NFInterface     string
 	Log             logr.Logger
 	MaxNFSlots      int
-	// ProxyTunnel string
 }
 
 type Manager interface {
@@ -56,7 +51,6 @@ type RealManager struct {
 	// nfInterface     string
 	maxNFSlots      int
 	log             logr.Logger
-	ProxyTunnel string
 
 	mu       sync.Mutex
 	programs map[client.ObjectKey]*api.P4Program
@@ -76,7 +70,6 @@ func NewManager(cfg ManagerConfig) (Manager, error) {
 	return &RealManager{
 		bf3Client:       cfg.Bf3Client,
 		p4targetManager: cfg.P4TargetManager,
-		// nfInterface:     cfg.NFInterface,
 		maxNFSlots:      cfg.MaxNFSlots,
 		programs:        make(map[client.ObjectKey]*api.P4Program),
 		ops:             make(map[client.ObjectKey]*trackedOp),
@@ -136,10 +129,11 @@ func (m *RealManager) GetDeployedNetworkFunctions(ctx context.Context) ([]client
 
 	config, err := m.bf3Client.GetPipeline(reqCtx)
 	if err != nil {
-		return nil, fmt.Errorf("querying switch pipeline: %w", err)
+		return nil, fmt.Errorf("querying DPL pipeline: %w", err)
 	}
 
-	if config == nil || config.Config == nil || len(config.Config.P4DeviceConfig) == 0 {
+	// DPL does not return the DeviceConfig -> relying on P4Info 
+	if config == nil || config.Config == nil || config.Config.P4Info == nil {
 		return nil, nil
 	}
 

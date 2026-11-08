@@ -1,0 +1,10 @@
+apiVersion: core.loom.io/v1alpha1
+kind: NetworkFunction
+metadata:
+  name: bmv2-counter-nf
+  labels:
+    nf: counter-bmv2
+spec:
+  p4File: https://raw.githubusercontent.com/aljLab/thesis-a-labonte/refs/heads/main/p4/count-v1model.p4
+  targetSelector:
+    p4target.loom.io/arch: v1model
