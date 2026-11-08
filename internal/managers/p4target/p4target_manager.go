@@ -54,6 +54,7 @@ type Manager interface {
 	GetDriverIPs() []net.IP
 	EnsureNetworkConfiguration(net_utils.TargetNetConfig) error
 	AllocateNetworkFunctionIP() (netip.Addr, error)
+	DeallocateNetworkFunctionIP(netip.Addr)
 	GetNfCIDR() netip.Prefix
 }
 
@@ -148,6 +149,14 @@ func (r *RealManager) AllocateNetworkFunctionIP() (netip.Addr, error) {
 	}
 	r.allocatedIPs[addr] = struct{}{}
 	return addr, nil
+}
+
+func (r *RealManager) DeallocateNetworkFunctionIP(addr netip.Addr) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// safe if key is already missing
+	delete(r.allocatedIPs, addr)
 }
 
 func (r *RealManager) GetCapacity() corev1.ResourceList {

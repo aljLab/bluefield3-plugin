@@ -72,7 +72,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err := r.Get(ctx, req.NamespacedName, netfunc); err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Info("NetworkFunction resource not found. Deleting associated resources if any.")
-			// _ = r.NFManager.EnsureAbsent(ctx, req.NamespacedName)
+			_ = r.NFManager.EnsureAbsent(ctx, req.NamespacedName)
 			return ctrl.Result{}, nil
 		}
 		logger.Error(err, "unable to fetch NetworkFunction")

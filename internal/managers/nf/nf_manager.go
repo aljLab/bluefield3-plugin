@@ -292,9 +292,10 @@ func (m *RealManager) deploy(ctx context.Context, nf *corev1alpha1.NetworkFuncti
 }
 
 func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, nfIP netip.Prefix) error {
-	/* key := client.ObjectKeyFromObject(nf)
+	key := client.ObjectKeyFromObject(nf)
 	program := m.programs[key]
 
+	/*
 	if program == nil || !nfIP.IsValid() {
 		return fmt.Errorf("invalid parameters for setting up network forwarding")
 	}
@@ -316,8 +317,8 @@ func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, n
 	err = netlink.RouteReplace(tunRoute); if err != nil {
 		return fmt.Errorf("creating srv6 proxy route: %w", err)
 	}
-
-	program.IP = nfIP */
+	*/
+	program.IP = nfIP
 	return nil
 }
 
@@ -352,7 +353,7 @@ func (m *RealManager) runDeletion(ctx context.Context, h *deploymentHandle, nfKe
 	h.transition(PhaseDeleted, "successfully deleted", nil)
 }
 
-// drain/flush operation is not documented for DOCA Pipeline Language
+// drain/flush operation is not documented for DOCA Pipeline Language: nil operation
 func (m *RealManager) drain(_ context.Context, _ client.ObjectKey) error {
 	return nil
 }
@@ -371,9 +372,9 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 	}
 
 	// If the NF was never fully deployed (e.g. failed during compilation or pre-check), then we can skip the teardown of forwarding rules
-	// and just remove the compiled program, since it was never actually pushed to the switch.
+	// and just remove the compiled program, since it was never actually pushed to the pipeline.
 	if nfOps.opType == opPresent && nfOps.handle.status.Phase != PhaseReady {
-		delete(m.ops, nfKey) // NF never reached ready, so no forwarding rules were installed; just remove the compiled program
+		delete(m.ops, nfKey)
 		delete(m.programs, nfKey)
 		return nil
 	}
@@ -392,24 +393,7 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 	return nil
 }
 
-
-// teardownNetworkForwarding removes the host route -6 <nfIP> dev <ProxyTunnel>
 func (m *RealManager) teardownNetworkForwarding(nfIP netip.Prefix) error {
-	/* _, ipnet, err := net.ParseCIDR(nfIP.String()); if err != nil {
-		return fmt.Errorf("Parsing assigned NF ip: %s, %w", nfIP.String(), err)
-	}
-	tun, err := netlink.LinkByName(m.ProxyTunnel); if err != nil {
-		return fmt.Errorf("fetching tunnel interface: %w", err)
-	}
-	tunRoute := &netlink.Route{
-		LinkIndex: tun.Attrs().Index,
-		Dst:       ipnet,
-		Family:    netlink.FAMILY_V6,
-	}
-	
-	// delete route created by m.SetUpNetworkForwarding()
-	err = netlink.RouteDel(tunRoute); if err != nil {
-		return fmt.Errorf("creating srv6 proxy route: %w", err)
-    }*/
+	// m.p4targetManager.DellocateNetworkFunctionIP(nfIP.Addr())
 	return nil
 }
