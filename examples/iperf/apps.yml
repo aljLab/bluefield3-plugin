@@ -120,7 +120,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: iperf-server11
+      app: iperf-server1
   template:
     metadata:
       labels:
