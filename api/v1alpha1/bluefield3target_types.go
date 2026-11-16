@@ -56,6 +56,16 @@ type BlueField3TargetSpec struct {
 	
 	// +optional
 	Resources ResourceRequirements `json:"resources,omitempty,omitzero"`
+
+	// +optional
+	// should be 
+	SRv6ProxyConfig corev1alpha1.SRv6Config `json:"srv6Config"`
+	
+	// +optional
+	// can be used to set: Out-Of-Band-Addr of BlueField (--oob-addr), 
+	// --p4r-port (default: 9559), --device-id (default: 1000), 
+	// --control-iface (default: eth0), the iface created by flannel
+	DriverArgs []string `json:"args"`
 }
 
 // BlueField3TargetStatus defines the observed state of BlueField3Target.

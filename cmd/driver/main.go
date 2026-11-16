@@ -97,7 +97,7 @@ func main() {
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
 	var maxNFSlots, deviceId int
-	var targetName, oobAddr, p4rPort, dataIface, controlIface string
+	var targetName, oobAddr, p4rPort, controlIface string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -124,7 +124,6 @@ func main() {
 		"The device-ID to use when communicating with DPL P4Runtime server.")
 	flag.IntVar(&maxNFSlots, "max-nf-slots", 1, "The maximum amount of schedulable NFs on the target at the same time.")
 	flag.StringVar(&targetName, "target-name", "bf3", "The name of the programmable target.")
-	flag.StringVar(&dataIface, "data-iface", "iml0", "Interface to discover target IPs from.")
 	flag.StringVar(&controlIface, "control-iface", "eth0", "Network interface to discover driver IPs from")
 
 	opts := zap.Options{
@@ -334,16 +333,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	// create Metrics HTTP server for Prometheus
+	// create Metrics HTTP server
 	driver := &handlers.Driver{
 		Client: bf3Client,
 		// Conn:   conn,
 		DeviceId: uint64(deviceId),
 		Log:    ctrl.Log.WithName("driver"),
-		DplServerAddr: "172.16.44.80:8090",
 	}
 
-	// maybe bind to driver ip?
 	server := bf3http.NewServer("0.0.0.0:8080", driver, ctrl.Log.WithName("http-server"))
 	if err = mgr.Add(server); err != nil {
 		setupLog.Error(err, "unable to add http server as dependency of manager")

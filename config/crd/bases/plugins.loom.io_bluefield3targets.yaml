@@ -39,6 +39,14 @@ spec:
           spec:
             description: spec defines the desired state of BlueField3Target
             properties:
+              args:
+                description: |-
+                  can be used to set: Out-Of-Band-Addr of BlueField (--oob-addr),
+                  --p4r-port (default: 9559), --device-id (default: 1000),
+                  --control-iface (default: eth0), the iface created by flannel
+                items:
+                  type: string
+                type: array
               interfaces:
                 items:
                   description: |-
@@ -87,6 +95,60 @@ spec:
                     description: |-
                       Requests describes the minimum amount of compute resources required for the target.
                       The values of the map are string quantities, e.g. "100m" for CPU or "1Gi" for memory.
+                    type: object
+                type: object
+              srv6Config:
+                description: should be
+                properties:
+                  mode:
+                    default: Native
+                    description: |-
+                      Mode selects who applies the SRv6 End behavior. Either way, IPv6 must be enabled
+                      on the P4 target for SRv6 to work.
+                    enum:
+                    - Native
+                    - Proxy
+                    type: string
+                  proxyConfig:
+                    description: ProxyConfig only applies if Mode == Proxy
+                    properties:
+                      fields:
+                        description: only applies if Strategy FieldBased
+                        items:
+                          properties:
+                            field:
+                              type: string
+                            match:
+                              properties:
+                                bitmask:
+                                  type: string
+                                name:
+                                  type: string
+                              required:
+                              - bitmask
+                              - name
+                              type: object
+                            proto:
+                              type: string
+                          required:
+                          - field
+                          - match
+                          - proto
+                          type: object
+                        type: array
+                      laneCount:
+                        description: |-
+                          indicates how many interface pairs to use: expects ReuseMappedHostInterfaces
+                          with at least LaneCount * 2 ifaces
+                        type: integer
+                      proxyStrategy:
+                        enum:
+                        - Dynamic
+                        - LaneBased
+                        - FieldBased
+                        type: string
+                    required:
+                    - proxyStrategy
                     type: object
                 type: object
             required:
