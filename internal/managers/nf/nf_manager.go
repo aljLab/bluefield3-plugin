@@ -49,8 +49,8 @@ type RealManager struct {
 	bf3Client       *p4client.Bf3Client
 	p4targetManager p4tmgr.Manager
 	// nfInterface     string
-	maxNFSlots      int
-	log             logr.Logger
+	maxNFSlots int
+	log        logr.Logger
 
 	mu       sync.Mutex
 	programs map[client.ObjectKey]*api.P4Program
@@ -132,7 +132,7 @@ func (m *RealManager) GetDeployedNetworkFunctions(ctx context.Context) ([]client
 		return nil, fmt.Errorf("querying DPL pipeline: %w", err)
 	}
 
-	// DPL does not return the DeviceConfig -> relying on P4Info 
+	// DPL does not return the DeviceConfig -> relying on P4Info
 	if config == nil || config.Config == nil || config.Config.P4Info == nil {
 		return nil, nil
 	}

@@ -18,7 +18,7 @@ import (
 
 type ManagerConfig struct {
 	Bf3Client *p4client.Bf3Client
-	Log    logr.Logger
+	Log       logr.Logger
 }
 
 type Manager interface {
@@ -35,7 +35,7 @@ type appliedState struct {
 
 type RealManager struct {
 	bf3Client *p4client.Bf3Client
-	log          logr.Logger
+	log       logr.Logger
 
 	mu          sync.RWMutex
 	configToNFs map[client.ObjectKey]map[client.ObjectKey]struct{} // configKey -> set of nfKeys
@@ -49,10 +49,10 @@ func NewManager(cfg ManagerConfig) (Manager, error) {
 		return nil, fmt.Errorf("switch client is required")
 	}
 	return &RealManager{
-		bf3Client: cfg.Bf3Client,
-		configToNFs:  make(map[client.ObjectKey]map[client.ObjectKey]struct{}),
-		nfApplied:    make(map[client.ObjectKey]*appliedState),
-		log:          cfg.Log,
+		bf3Client:   cfg.Bf3Client,
+		configToNFs: make(map[client.ObjectKey]map[client.ObjectKey]struct{}),
+		nfApplied:   make(map[client.ObjectKey]*appliedState),
+		log:         cfg.Log,
 	}, nil
 }
 

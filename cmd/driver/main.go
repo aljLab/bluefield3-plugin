@@ -44,15 +44,15 @@ import (
 
 	// "github.com/mantra6g/bluefield3-plugin/internal/controllers/sc"
 	// dplclient "github.com/mantra6g/bluefield3-plugin/client"
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/lease"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/nf"
 	"github.com/mantra6g/bluefield3-plugin/internal/controllers/p4target"
-	"github.com/mantra6g/bluefield3-plugin/internal/controllers/lease"
-	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
+	bf3http "github.com/mantra6g/bluefield3-plugin/internal/http"
+	"github.com/mantra6g/bluefield3-plugin/internal/http/handlers"
 	nfmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nf"
 	nfcfgmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/nfcfg"
+	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
 	"github.com/mantra6g/bluefield3-plugin/pkg/p4client"
-	"github.com/mantra6g/bluefield3-plugin/internal/http/handlers"
-	bf3http "github.com/mantra6g/bluefield3-plugin/internal/http"
 
 	// +kubebuilder:scaffold:imports
 
@@ -68,9 +68,9 @@ var (
 )
 
 const (
-	electionIDHigh  = 0
-	electionIDLow   = 1
-	defaultDeviceID = 1000
+	electionIDHigh                     = 0
+	electionIDLow                      = 1
+	defaultDeviceID                    = 1000
 	DefaultLeaseRenewIntervalSeconds   = 5
 	DefaultLeaseDurationSeconds        = 40
 	DefaultStatusUpdateIntervalSeconds = 10
@@ -234,8 +234,7 @@ func main() {
 	}
 	setupLog.Info(fmt.Sprintf("Discovered driver IPs on %s: %v", controlIface, driverIPs))
 
-
-	// Establish gRPC connection 
+	// Establish gRPC connection
 	// Note: The DPL p4 runtime daemon doesn't support Master Arbitration: the first attempt succeeds, successive fail
 	// https://networking-docs.nvidia.com/doca/archive/3-5-0/dpl-release-notes#Unsupported-Features
 	setupLog.Info(fmt.Sprintf("Connecting to P4Runtime client at %s:%s", oobAddr, p4rPort))
@@ -256,16 +255,16 @@ func main() {
 	bf3Client := p4client.NewBf3Client(c, defaultDeviceID, electionIDHigh, electionIDLow)
 
 	/*
-	MANAGERS: P4Target, NetworkFunction, NetworkFunctionConfig
+		MANAGERS: P4Target, NetworkFunction, NetworkFunctionConfig
 	*/
 	p4targetMgr, err := p4tmgr.NewManager(p4tmgr.ManagerConfig{
 		Name:       targetName,
 		P4Client:   c,
 		MaxNFSlots: maxNFSlots,
 		// TargetIPs:  targetIPs,
-		DriverIPs:  driverIPs,
-		DeviceId: deviceId,
-		Log:        ctrl.Log.WithName("p4target-manager"),
+		DriverIPs: driverIPs,
+		DeviceId:  deviceId,
+		Log:       ctrl.Log.WithName("p4target-manager"),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to create p4target manager")
@@ -285,7 +284,7 @@ func main() {
 
 	nfcfgMgr, err := nfcfgmgr.NewManager(nfcfgmgr.ManagerConfig{
 		Bf3Client: bf3Client,
-		Log:    ctrl.Log.WithName("nfcfg-manager"),
+		Log:       ctrl.Log.WithName("nfcfg-manager"),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to create nfcfg manager")
@@ -293,12 +292,12 @@ func main() {
 	}
 
 	/*
-	RECONCILERS: P4Target, NetworkFunction, Lease (Node Heartbeat)
+		RECONCILERS: P4Target, NetworkFunction, Lease (Node Heartbeat)
 	*/
 
 	if err := (&nf.Reconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
 		NFManager:       nfMgr,
 		NFConfigManager: nfcfgMgr,
 		P4TargetManager: p4targetMgr,
@@ -338,7 +337,7 @@ func main() {
 		Client: bf3Client,
 		// Conn:   conn,
 		DeviceId: uint64(deviceId),
-		Log:    ctrl.Log.WithName("driver"),
+		Log:      ctrl.Log.WithName("driver"),
 	}
 
 	server := bf3http.NewServer("0.0.0.0:8080", driver, ctrl.Log.WithName("http-server"))

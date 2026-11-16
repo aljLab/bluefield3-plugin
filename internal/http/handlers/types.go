@@ -1,8 +1,8 @@
 package handlers
 
-import(
-	v1 "github.com/p4lang/p4runtime/go/p4/v1"
+import (
 	p4configv1 "github.com/p4lang/p4runtime/go/p4/config/v1"
+	v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )
 
 type ErrorResponse struct {
@@ -15,7 +15,7 @@ type HealthResponse struct {
 }
 
 type CounterDataResponse struct {
-	CounterEntries []*v1.CounterEntry `json:"counter_entries"`
+	CounterEntries       []*v1.CounterEntry       `json:"counter_entries"`
 	DirectCounterEntries []*v1.DirectCounterEntry `json:"direct_counter_entries"`
 }
 
@@ -72,8 +72,7 @@ type CounterMetadata struct {
 	Unit        string `json:"unit"`
 }
 
-
 type P4ProgramResponse struct {
-	Status string             `json:"status"`          // "deployed" or "not_deployed"
+	Status string             `json:"status"` // "deployed" or "not_deployed"
 	P4Info *p4configv1.P4Info `json:"p4info"`
 }

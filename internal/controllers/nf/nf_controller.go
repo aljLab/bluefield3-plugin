@@ -43,9 +43,9 @@ import (
 // NetworkFunctionReconciler reconciles a NetworkFunction object
 type Reconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme          *runtime.Scheme
 	NFManager       nfmgr.Manager
-	NFConfigManager       nfcfgmgr.Manager
+	NFConfigManager nfcfgmgr.Manager
 	P4TargetManager p4tmgr.Manager
 }
 

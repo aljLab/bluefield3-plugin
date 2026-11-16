@@ -17,10 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	corev1 "k8s.io/api/core/v1"
-	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 )
 
 const (
@@ -53,17 +53,17 @@ type BlueField3TargetSpec struct {
 
 	// +required
 	NodeName *string `json:"nodeName"`
-	
+
 	// +optional
 	Resources ResourceRequirements `json:"resources,omitempty,omitzero"`
 
 	// +optional
-	// should be 
+	// should be
 	SRv6ProxyConfig corev1alpha1.SRv6Config `json:"srv6Config"`
-	
+
 	// +optional
-	// can be used to set: Out-Of-Band-Addr of BlueField (--oob-addr), 
-	// --p4r-port (default: 9559), --device-id (default: 1000), 
+	// can be used to set: Out-Of-Band-Addr of BlueField (--oob-addr),
+	// --p4r-port (default: 9559), --device-id (default: 1000),
 	// --control-iface (default: eth0), the iface created by flannel
 	DriverArgs []string `json:"args"`
 }

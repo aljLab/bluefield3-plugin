@@ -6,7 +6,8 @@ import (
 	"log"
 	"net/http"
 	"time"
-)	
+)
+
 func (d *Driver) ProgramHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
@@ -30,7 +31,7 @@ func (d *Driver) ProgramHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(P4ProgramResponse{
 			Status: "deployed",
-			P4Info:  config.Config.P4Info,
+			P4Info: config.Config.P4Info,
 		}); err != nil {
 			log.Printf("failed to encode get program deployed response: %v", err)
 		}

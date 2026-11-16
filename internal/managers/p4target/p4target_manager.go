@@ -11,17 +11,12 @@ import (
 	"github.com/go-logr/logr"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
-	/* "github.com/vishvananda/netlink"
-	"golang.org/x/sys/unix" */
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	net_utils "github.com/mantra6g/bluefield3-plugin/networking"
-	// "github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
 	"github.com/mantra6g/bluefield3-plugin/pkg/ipam"
-	/* "github.com/mantra6g/bluefield3-plugin/pkg/proxy"
-	"github.com/mantra6g/bluefield3-plugin/pkg/proxy/utils" */
 )
 
 type Condition struct {
@@ -31,7 +26,7 @@ type Condition struct {
 }
 
 type ManagerConfig struct {
-	Name       string
+	Name string
 	// TargetIPs  []net.IP
 	DriverIPs  []net.IP
 	MaxNFSlots int
@@ -40,7 +35,6 @@ type ManagerConfig struct {
 	Log        logr.Logger
 	DeviceId   int
 }
-
 
 type Manager interface {
 	GetName() string
@@ -69,7 +63,7 @@ func NewManager(cfg ManagerConfig) (Manager, error) {
 		return nil, fmt.Errorf("P4Runtime client is required")
 	}
 	return &RealManager{
-		name:         cfg.Name,
+		name: cfg.Name,
 		// targetIPs:    cfg.TargetIPs, -> maybe update later when targetDataplaneIPs is set by daemon
 		driverIPs:    cfg.DriverIPs,
 		maxNFSlots:   cfg.MaxNFSlots,
@@ -95,7 +89,7 @@ type RealManager struct {
 	cidr         netip.Prefix
 	ipAllocator  *ipam.AddrAllocator
 	allocatedIPs map[netip.Addr]struct{}
-	DeviceId  int
+	DeviceId     int
 }
 
 func (r *RealManager) GetNfCIDR() netip.Prefix {
@@ -123,7 +117,7 @@ func (r *RealManager) EnsureNetworkConfiguration(cfg net_utils.TargetNetConfig) 
 	if r.cidr == cidr {
 		return nil
 	}
-	
+
 	alloc, err := ipam.NewAddrAllocator(cidr)
 	if err != nil {
 		return fmt.Errorf("failed to create IP allocator: %w", err)
@@ -131,7 +125,7 @@ func (r *RealManager) EnsureNetworkConfiguration(cfg net_utils.TargetNetConfig) 
 	r.cidr = cidr
 	r.ipAllocator = alloc
 	r.allocatedIPs = make(map[netip.Addr]struct{})
-	
+
 	return nil
 }
 

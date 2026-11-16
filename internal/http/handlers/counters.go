@@ -14,15 +14,17 @@ func (d *Driver) ReadCountersHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
-	counterEntries, err := d.readCounterEntries(ctx, w); if err != nil {
+	counterEntries, err := d.readCounterEntries(ctx, w)
+	if err != nil {
 		d.Log.Info("Failed to retrieve counter values", "device", d.DeviceId)
 	}
-	directCounterEntries, err := d.readDirectCounterEntries(ctx, w); if err != nil {
+	directCounterEntries, err := d.readDirectCounterEntries(ctx, w)
+	if err != nil {
 		d.Log.Info("Failed to retrieve direct counter values", "device", d.DeviceId)
 	}
 
 	res := CounterDataResponse{
-		CounterEntries: counterEntries,
+		CounterEntries:       counterEntries,
 		DirectCounterEntries: directCounterEntries,
 	}
 
@@ -33,7 +35,7 @@ func (d *Driver) ReadCountersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (d *Driver) readCounterEntries(ctx context.Context, w http.ResponseWriter) ([]*v1.CounterEntry, error ) {
+func (d *Driver) readCounterEntries(ctx context.Context, w http.ResponseWriter) ([]*v1.CounterEntry, error) {
 	reqCounters := &v1.ReadRequest{
 		DeviceId: d.DeviceId,
 		Entities: []*v1.Entity{
@@ -75,7 +77,7 @@ func (d *Driver) readDirectCounterEntries(ctx context.Context, w http.ResponseWr
 		DeviceId: d.DeviceId,
 		Entities: []*v1.Entity{
 			{Entity: &v1.Entity_DirectCounterEntry{DirectCounterEntry: &v1.DirectCounterEntry{
-				TableEntry: &v1.TableEntry{ TableId: 0 },
+				TableEntry: &v1.TableEntry{TableId: 0},
 			}}},
 		},
 	}

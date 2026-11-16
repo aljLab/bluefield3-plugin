@@ -27,7 +27,7 @@ func NewServer(listenAddr string, driver *handlers.Driver, log logr.Logger) *Ser
 	mux.HandleFunc("/api/tables", driver.TablesHandler)
 	mux.HandleFunc("/api/program", driver.ProgramHandler)
 	/*
-	mux.HandleFunc("/api/metrics", driver.MetricsHandler)*/
+		mux.HandleFunc("/api/metrics", driver.MetricsHandler)*/
 
 	log.Info("Starting HTTP server", "listenAddr", listenAddr)
 

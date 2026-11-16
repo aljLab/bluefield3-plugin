@@ -195,9 +195,9 @@ func main() {
 	}
 
 	conf := util.Bf3DriverConfig{
-		ContainerName: "bluefield3-driver",
-		DriverImage:   "bluefield3-driver:local",
-		PodNamespace:  "loom-system",
+		ContainerName:        "bluefield3-driver",
+		DriverImage:          "bluefield3-driver:local",
+		PodNamespace:         "loom-system",
 		DriverServiceAccount: driverServiceAccount,
 	}
 

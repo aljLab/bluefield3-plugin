@@ -21,20 +21,20 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
 	"github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
+	"github.com/mantra6g/bluefield3-plugin/internal/controllers/bf3/util"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 )
@@ -46,7 +46,7 @@ type BlueField3TargetReconciler struct {
 	Config *util.Bf3DriverConfig
 }
 
-const(
+const (
 	P4TargetNamespace = "default"
 )
 
@@ -69,7 +69,7 @@ const(
 func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(1).Info("Reconciling BlueField3Target")
-	
+
 	bf3Target := &v1alpha1.BlueField3Target{}
 	err := r.Get(ctx, req.NamespacedName, bf3Target)
 	if err != nil {
@@ -87,7 +87,8 @@ func (r *BlueField3TargetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		Name: bf3Target.Name,
 	}, target); err != nil {
 		if errors.IsNotFound(err) {
-			err = r.createP4Target(ctx, bf3Target); if err != nil {
+			err = r.createP4Target(ctx, bf3Target)
+			if err != nil {
 				logger.Error(err, "unable to create P4Target")
 				return ctrl.Result{}, err
 			}

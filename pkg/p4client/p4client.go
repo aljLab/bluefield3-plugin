@@ -77,7 +77,7 @@ func (c *Bf3Client) ResetPipeline(ctx context.Context) error {
 // GetPipeline returns the currently loaded forwarding pipeline config from the switch.
 func (c *Bf3Client) GetPipeline(ctx context.Context) (*p4v1.GetForwardingPipelineConfigResponse, error) {
 	return c.P4Client.GetForwardingPipelineConfig(ctx, &p4v1.GetForwardingPipelineConfigRequest{
-		DeviceId: c.deviceID,
+		DeviceId:     c.deviceID,
 		ResponseType: 0,
 	})
 }
@@ -213,13 +213,14 @@ func (c *Bf3Client) EditTableEntries(ctx context.Context, entries []*p4v1.TableE
 		})
 	}
 	_, err := c.P4Client.Write(ctx, &p4v1.WriteRequest{
-		DeviceId:   c.deviceID,
+		DeviceId: c.deviceID,
 		// ElectionId: &p4v1.Uint128{High: c.electionIDHigh, Low: c.electionIDLow},
-		Updates:    updates,
+		Updates: updates,
 	})
 	return EnrichGRPCError(err)
 	// return err
 }
+
 // EnrichGRPCError preserves the original error and adds gRPC detail messages.
 func EnrichGRPCError(err error) error {
 	if err == nil {

@@ -10,14 +10,15 @@ import (
 )
 
 type Bf3DriverConfig struct {
-	ContainerName string
-	DriverImage   string
-	PodNamespace  string
+	ContainerName        string
+	DriverImage          string
+	PodNamespace         string
 	DriverServiceAccount string
 }
 
 /*
 spec:
+
 	network:
 		srv6:
 			mode: Proxy
@@ -98,7 +99,7 @@ func EnsureBf3DriverAffinity(nodeName string) *corev1.Affinity {
 	req := corev1.NodeSelector{}
 	nodeSelectorTerms := GetBf3AffinityNodeSelectorTerms(nodeName)
 
-	req.NodeSelectorTerms= nodeSelectorTerms
+	req.NodeSelectorTerms = nodeSelectorTerms
 	nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = &req
 	affinity.NodeAffinity = &nodeAffinity
 
