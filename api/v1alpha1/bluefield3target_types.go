@@ -58,7 +58,6 @@ type BlueField3TargetSpec struct {
 	Resources ResourceRequirements `json:"resources,omitempty,omitzero"`
 
 	// +optional
-	// should be
 	SRv6ProxyConfig corev1alpha1.SRv6Config `json:"srv6Config"`
 
 	// +optional
