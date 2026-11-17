@@ -1,7 +1,7 @@
 apiVersion: plugins.loom.io/v1alpha1
 kind: BlueField3Target
 metadata:
-  name: bf3-target
+  name: bf3-target-field
 spec:
   interfaces:
     - in: "enp94s0f0np0"
@@ -23,9 +23,9 @@ spec:
           field: "SrcAddr"
           match:
             name: "bitmask"
-            bitmask: "0xffffff00"
+            bitmask: "0xfffffff0"
         - proto: "ipv4"
           field: "DstAddr"
           match:
             name: "bitmask"
-            bitmask: "0xffffff00"
+            bitmask: "0xfffffff0"
