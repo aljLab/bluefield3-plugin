@@ -6,6 +6,8 @@ spec:
   interfaces:
     - in: "enp94s0f0np0"
       out: "enp5es0f0s5"
+    - in: "enp5es0f0s6"
+      out: "enp5es0f0s7"
   nodeName: "dtn-04"
   resources:
     requests:

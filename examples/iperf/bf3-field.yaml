@@ -22,10 +22,18 @@ spec:
         - proto: "ipv4"
           field: "SrcAddr"
           match:
-            name: "bitmask"
+            type: "bitmask"
             bitmask: "0xfffffff0"
         - proto: "ipv4"
           field: "DstAddr"
           match:
-            name: "bitmask"
+            type: "bitmask"
             bitmask: "0xfffffff0"
+        - proto: "tcp"
+          field: "SrcPort"
+          match:
+            type: "exact"
+        - proto: "tcp"
+          field: "DstPort"
+          match:
+            type: "exact"

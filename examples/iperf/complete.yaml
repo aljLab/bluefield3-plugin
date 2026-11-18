@@ -1,0 +1,97 @@
+apiVersion: core.loom.io/v1alpha1
+kind: Application
+metadata:
+  name: iperf-client0
+spec: {}
+---
+apiVersion: core.loom.io/v1alpha1
+kind: Application
+metadata:
+  name: iperf-server0
+spec: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iperf-client0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iperf-client0
+  template:
+    metadata:
+      labels:
+        app: iperf-client0
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{
+            "name": "loom-cni",
+            "namespace": "loom-system",
+            "cni-args": {
+              "app_type":      "application",
+              "app_name":      "iperf-client0",
+              "app_namespace": "default"
+            }
+          }]
+    spec:
+      containers:
+      - name: iperf-client
+        image: networkstatic/iperf3
+        command: ["sleep", "infinity"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iperf-server0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iperf-server0
+  template:
+    metadata:
+      labels:
+        app: iperf-server0
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{
+            "name": "loom-cni",
+            "namespace": "loom-system",
+            "cni-args": {
+              "app_type":      "application",
+              "app_name":      "iperf-server0",
+              "app_namespace": "default"
+            }
+          }]
+    spec:
+      containers:
+      - name: iperf-server
+        image: networkstatic/iperf3
+        command: ["iperf3", "-s"]
+---
+apiVersion: core.loom.io/v1alpha1
+kind: NetworkFunction
+metadata:
+  name: doca-counter-nf
+  labels:
+    nf: counter-doca
+spec:
+  p4File: https://github.com/aljLab/thesis-a-labonte/raw/refs/heads/main/p4/count-doca-bf3.tar.gz
+  targetSelector:
+    p4target.loom.io/arch: doca-bf3
+---
+apiVersion: core.loom.io/v1alpha1
+kind: ServiceChain
+metadata:
+  name: iperf3-chain-doca-0
+spec:
+  from:
+    name: iperf-client0
+    namespace: default
+  to:
+    name: iperf-server0
+    namespace: default
+  functions:
+  - matchLabels:
+      nf: counter-doca
