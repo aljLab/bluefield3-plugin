@@ -98,7 +98,6 @@ spec:
                     type: object
                 type: object
               srv6Config:
-                description: should be
                 properties:
                   mode:
                     default: Native
