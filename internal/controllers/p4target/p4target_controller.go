@@ -69,28 +69,6 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	/*
-		-> commenting out, because target Pod is only used to get the node name,
-		-> which we already specify in the bluefield3target
-		-> might make the POD_NAME/POD_NAMESPACE ENVs workaround obsolete
-
-		podName := os.Getenv("POD_NAME")
-		podNamespace := os.Getenv("POD_NAMESPACE")
-		if podName == "" || podNamespace == "" {
-			logger.Error(nil, "POD_NAME or POD_NAMESPACE environment variable is not set")
-			panic("POD_NAME or POD_NAMESPACE environment variable is not set")
-		}
-
-		targetPod := &v1.Pod{}
-		if err := r.Get(ctx, types.NamespacedName{Name: podName, Namespace: podNamespace}, targetPod); err != nil {
-			if errors.IsNotFound(err) {
-				logger.V(1).Info("P4Target Pod not found. Requeueing after 10 seconds.")
-				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-			}
-			logger.Error(err, "Failed to get the Driver Pod associated with this P4Target")
-			return ctrl.Result{}, err
-		} */
-
 	if target.Status.NodeName == "" {
 		logger.V(1).Info("P4Target does not nodeName set in status. Setting and requeueing after 10 seconds.")
 		err := r.updateP4TargetStatus(ctx, target)
@@ -119,7 +97,7 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, r.updateP4TargetStatus(ctx, target) //, targetPod)
+	return ctrl.Result{}, r.updateP4TargetStatus(ctx, target)
 }
 
 func (r *Reconciler) updateP4TargetStatus(ctx context.Context, target *corev1alpha1.P4Target) error {

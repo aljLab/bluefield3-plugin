@@ -16,17 +16,6 @@ type Bf3DriverConfig struct {
 	DriverServiceAccount string
 }
 
-/*
-spec:
-
-	network:
-		srv6:
-			mode: Proxy
-		hostInterfaces:
-			strategy: Reuse
-			reuse:
-				names: ["bf0", "bf1"] -> get from BF3TargetSpec
-*/
 func EnsureP4TargetSpec(target *v1alpha1.BlueField3Target) *corev1alpha1.P4TargetSpec {
 	spec := &corev1alpha1.P4TargetSpec{}
 	spec.Network = EnsureP4TargetNetwork(target)

@@ -276,7 +276,6 @@ func (m *RealManager) setupNetworkForwarding(nf *corev1alpha1.NetworkFunction, n
 	key := client.ObjectKeyFromObject(nf)
 	program := m.programs[key]
 
-	/* read proxy config and make config request to daemon: re/load program */
 	program.IP = nfIP
 	return nil
 }
@@ -353,9 +352,8 @@ func (m *RealManager) deleteResources(ctx context.Context, nfKey client.ObjectKe
 }
 
 func (m *RealManager) teardownNetworkForwarding(nfIP netip.Prefix) error {
+	// make target report that a network function deployed on it has been deleted
 	m.p4targetManager.DeallocateNetworkFunctionIP(nfIP.Addr())
-
-	// remove/reset proxy configuration
 
 	return nil
 }

@@ -1,3 +1,4 @@
+/* This file is adapted from the BMv2 plugin for IML */
 package p4client
 
 import (
@@ -218,7 +219,6 @@ func (c *Bf3Client) EditTableEntries(ctx context.Context, entries []*p4v1.TableE
 		Updates: updates,
 	})
 	return EnrichGRPCError(err)
-	// return err
 }
 
 // EnrichGRPCError preserves the original error and adds gRPC detail messages.

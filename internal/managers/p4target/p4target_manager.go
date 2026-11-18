@@ -14,6 +14,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"google.golang.org/grpc/codes"
+    "google.golang.org/grpc/status"
 
 	net_utils "github.com/mantra6g/bluefield3-plugin/networking"
 	"github.com/mantra6g/bluefield3-plugin/pkg/ipam"
@@ -218,7 +220,6 @@ func (r *RealManager) GetHealthyCondition() corev1alpha1.P4TargetCondition {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	now := metav1.NewTime(time.Now())
-	// _, err := r.p4client.Capabilities(ctx, &p4v1.CapabilitiesRequest{}) -> not supported by NVIDIA
 	_, err := r.p4client.GetForwardingPipelineConfig(
 		ctx,
 		&p4v1.GetForwardingPipelineConfigRequest{
@@ -226,7 +227,8 @@ func (r *RealManager) GetHealthyCondition() corev1alpha1.P4TargetCondition {
 			ResponseType: p4v1.GetForwardingPipelineConfigRequest_COOKIE_ONLY,
 		},
 	)
-	if err != nil {
+	code := status.Code(err)
+	if code == codes.Unavailable || code == codes.DeadlineExceeded {
 		return corev1alpha1.P4TargetCondition{
 			Type:              ConditionHealthy,
 			Status:            metav1.ConditionFalse,
@@ -235,6 +237,17 @@ func (r *RealManager) GetHealthyCondition() corev1alpha1.P4TargetCondition {
 			Message:           err.Error(),
 		}
 	}
+
+	if code == codes.NotFound {
+		return corev1alpha1.P4TargetCondition{
+			Type:              ConditionHealthy,
+			Status:            metav1.ConditionFalse,
+			LastHeartbeatTime: now,
+			Reason:            "TargetReachable, but not initialized. To initialize, load a program manually with 'dpl p4runtime_sh'.",
+			Message:           err.Error(),
+		}
+	}
+
 	return corev1alpha1.P4TargetCondition{
 		Type:              ConditionHealthy,
 		Status:            metav1.ConditionTrue,

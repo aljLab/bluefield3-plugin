@@ -1,3 +1,4 @@
+/* This manager is copied from the BMv2-Plugin code. */
 package nfcfg
 
 import (

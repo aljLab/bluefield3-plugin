@@ -1,3 +1,4 @@
+/* This helper file is copied from the BMv2 Plugin for IML */
 package p4rutils
 
 import (

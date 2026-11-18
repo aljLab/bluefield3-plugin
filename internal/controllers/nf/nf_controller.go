@@ -171,7 +171,6 @@ func (r *Reconciler) updateStatus(networkFunction *corev1alpha1.NetworkFunction,
 
 func calculateStatus(netFunc *corev1alpha1.NetworkFunction,
 	depStatus nfmgr.DeploymentStatus, funcIP netip.Prefix) corev1alpha1.NetworkFunctionStatus {
-	// Calculate Phase
 	var calculatedPhase corev1alpha1.NetworkFunctionPhase
 	var readyCondition corev1alpha1.NetworkFunctionCondition
 	switch depStatus.Phase {
