@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/go-logr/logr v1.4.3
-	github.com/mantra6g/iml/api v0.0.0-20261116142219-1411c13ede7e
+	github.com/mantra6g/iml/api v0.0.0-20261119094801-b49a4c4634ef
 	github.com/onsi/ginkgo/v2 v2.27.4
 	github.com/onsi/gomega v1.39.0
 	github.com/p4lang/p4runtime v1.6.0
