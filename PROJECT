@@ -9,7 +9,7 @@ layout:
 plugins:
   helm.kubebuilder.io/v2-alpha:
     manifests: dist/install.yaml
-    output: deploy
+    output: dist
 projectName: bluefield3-plugin
 repo: github.com/mantra6g/bluefield3-plugin
 resources:
