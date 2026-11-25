@@ -26,14 +26,10 @@ import (
 
 	v1alpha1 "github.com/mantra6g/bluefield3-plugin/api/v1alpha1"
 	p4tmgr "github.com/mantra6g/bluefield3-plugin/internal/managers/p4target"
-	net_types "github.com/mantra6g/bluefield3-plugin/networking"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 
 	"github.com/go-logr/logr"
-	/* v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors" */
 
-	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -90,7 +86,7 @@ func (r *Reconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
-	if err := r.P4TargetManager.EnsureNetworkConfiguration(net_types.TargetNetConfig{
+	if err := r.P4TargetManager.EnsureNetworkConfiguration(p4tmgr.TargetNetConfig{
 		NfCIDR: target.Spec.NfCIDR,
 	}); err != nil {
 		logger.Error(err, "Failed to configure network")

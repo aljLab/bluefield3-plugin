@@ -11,15 +11,18 @@ import (
 	"github.com/go-logr/logr"
 	corev1alpha1 "github.com/mantra6g/iml/api/core/v1alpha1"
 	p4v1 "github.com/p4lang/p4runtime/go/p4/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"google.golang.org/grpc/codes"
-    "google.golang.org/grpc/status"
 
-	net_utils "github.com/mantra6g/bluefield3-plugin/networking"
 	"github.com/mantra6g/bluefield3-plugin/pkg/ipam"
 )
+
+type TargetNetConfig struct {
+	NfCIDR string
+}
 
 type Condition struct {
 	Status  metav1.ConditionStatus
@@ -48,7 +51,7 @@ type Manager interface {
 	GetOccupiedCondition() corev1alpha1.P4TargetCondition
 	GetTargetIPs() []net.IP
 	GetDriverIPs() []net.IP
-	EnsureNetworkConfiguration(net_utils.TargetNetConfig) error
+	EnsureNetworkConfiguration(TargetNetConfig) error
 	AllocateNetworkFunctionIP() (netip.Addr, error)
 	DeallocateNetworkFunctionIP(netip.Addr)
 	GetNfCIDR() netip.Prefix
@@ -106,7 +109,7 @@ func (r *RealManager) GetTargetIPs() []net.IP { return r.targetIPs }
 
 func (r *RealManager) GetDriverIPs() []net.IP { return r.driverIPs }
 
-func (r *RealManager) EnsureNetworkConfiguration(cfg net_utils.TargetNetConfig) error {
+func (r *RealManager) EnsureNetworkConfiguration(cfg TargetNetConfig) error {
 	cidr, err := netip.ParsePrefix(cfg.NfCIDR)
 	if err != nil {
 		return fmt.Errorf("invalid CIDR %q: %w", cfg.NfCIDR, err)
